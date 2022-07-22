@@ -6,7 +6,6 @@
 import { Locator, Page, expect, TestInfo } from '@playwright/test';
 import path from 'path';
 import sharp from 'sharp';
-import { timeout } from '../playwright.config';
 
 // // Declare the types of your fixtures.
 // type MyFixtures = {
@@ -80,13 +79,13 @@ export class DocsPageBase {
      * @param options 
      */
     async screenshot(options?: { 
-		locator?: Locator | undefined; 
-		name?: string | undefined; 
-		width?: number | undefined; 
-		height?: number | undefined; 
-		highlightobjects?: Locator[] | undefined; 
-		blurAll?: boolean | undefined; 
-		pressenter?: boolean | undefined; 
+		locator?: Locator | undefined,
+		name?: string | undefined,
+		width?: number | undefined,
+		height?: number | undefined,
+		highlightobjects?: Locator[] | undefined,
+		blurAll?: boolean | undefined,
+		pressenter?: boolean | undefined,
 	} | undefined): Promise<void> {
 
 		// set defaults
@@ -113,13 +112,14 @@ export class DocsPageBase {
         //     // click out of any focused element
         //     await this.page.locator(':focus').evaluate(el => {
         //         el.blur();
-        //     }, null, {timeout: 1000});
+        //     }, undefined, {timeout: 1000});
         // }
 
         await DocsPageBase.screenshotBigSmall (
             options.locator ? options.locator : this.page,
             this.screenshotDir,
-            options.name
+            options.name,
+            options.pressenter
         );
     
         if(options.highlightobjects){
@@ -365,8 +365,11 @@ export class AzurePortalPage extends DocsPageBase {
 export class GitHubPage extends DocsPageBase {
     repoUrl: string;
 
-    constructor(page: Page, testInfo?: TestInfo){
-        super(page, testInfo);
+    constructor(page: Page, options?: {testInfo?: TestInfo, repoUrl?: string}){
+        super(page, options?.testInfo);
+        if(options?.repoUrl) {
+            this.repoUrl = options?.repoUrl;
+        }
     }
 
     async signin (): Promise<void> {
@@ -391,7 +394,7 @@ export class GitHubPage extends DocsPageBase {
         var forkButtonSelector = `a[href="${repo.replace('https://github.com', '').replace(/\/$/, "")}/fork"]`; 
 
         // DEBUG: nothing to blur 
-        if(screenshotName) {
+        if(screenshotName) { 
             await this.screenshot({
 				width: 780, 
 				height: 500, 
@@ -490,32 +493,43 @@ export class GitHubPage extends DocsPageBase {
      * @param replaceSet 
      * @param options 
      */
-    async modifyLinesInFileInVSC(replaceSet: {searchLine: string, replaceLine: string}[], options?: {filepath?: string, screenshotName?: string}): Promise<void> {
+    async viewOrModifyFileInVSC(options?: {filepath?: string, searchOrReplace?: {searchLine: string, replaceLine?: string}[], screenshotName?: string}): Promise<void> {
 
         options = options ? options : {};
 
-        var fileSelector;
+        var fileSelectors;
         if(options.filepath) {
-            fileSelector = (await this.openFileInVSC(options.filepath)).dirtySelector;
+            fileSelectors = await this.openFileInVSC(options.filepath);
         }
 
         await this.page.locator('[id="workbench.parts.editor"] .editor-container .view-lines').click();
-        await this.page.waitForTimeout(2000); // find fastkey doesn't work without this wait
+        await this.page.waitForTimeout(2000); // The FIND fastkey doesn't work without this wait
 
         var highlighted: Locator[] = [];
 
-        for (const r of replaceSet) {
-            await this.page.locator('html').press('Control+f'); //(Window/Linux is Control+f)
-            await this.page.locator('[aria-label="Find"]').fill(r.searchLine);
-            await this.page.locator('[aria-label="Find"]').press('Enter');
-            await this.page.locator('[aria-label="Close \\(Escape\\)"]').click();
-            await this.typeInCodeEditor(r.replaceLine);
-            highlighted.push(this.page.locator(`div.view-line span:has-text("${r.replaceLine}")`));
+        var isDirty = false;
+
+        if(options.searchOrReplace) {
+            for (const r of options.searchOrReplace) {
+                await this.page.locator('html').press('Control+f'); //(Window/Linux is Control+f)
+                await this.page.locator('[aria-label="Find"]').fill(r.searchLine);
+                await this.page.locator('[aria-label="Find"]').press('Enter');
+                await this.page.locator('[aria-label="Close \\(Escape\\)"]').click();
+                if(r.replaceLine) {
+                    isDirty = true;
+                    await this.typeInCodeEditor(r.replaceLine);
+                    highlighted.push(this.page.locator(`div.view-line span:has-text("${r.replaceLine}")`));
+                } else {
+                    await this.page.locator('[id="workbench.parts.editor"] .editor-container .view-lines').click();
+                } // no highlight for search. it's only for getting desired text to show up in the editor.
+            }    
         }
       
         // CSS changed on the file node after modification so select it now
-        if(options.filepath && replaceSet) {
-            highlighted.push(this.page.locator(fileSelector));
+        if(options.filepath && options.searchOrReplace && isDirty) {
+            highlighted.push(this.page.locator(fileSelectors.dirtySelector));
+        } else {
+            highlighted.push(this.page.locator(fileSelectors.cleanSelector));
         }
 
         // DEBUG: nothing to blur
@@ -563,18 +577,35 @@ export class GitHubPage extends DocsPageBase {
         await this.page.waitForTimeout(5000); // make sure commit finishes. need a better way to do this
     }
 
-    async waitForActionRun(message: string): Promise<void> {
+    async waitForActionRun(options?: {message?: string, screenshotName?: string}): Promise<void> {
+
+        options = options ? options : {};
 
         if(!this.repoUrl) {
             throw new Error('repoUrl is empty.')            
         }
+    
+        var actionsUrl = `${this.repoUrl}/actions`;
 
-        await this.page.goto(`${this.repoUrl}/actions`);
-        await this.page.locator(`a:has-text("${message}")`).first().click();
-        await this.page.waitForTimeout(3000);
-        while(await this.page.locator('button.btn-danger:has-text("Cancel workflow")').isVisible()) {
-            await this.page.waitForTimeout(10000);
-        };
+        // Right now just go there directly if not already there.
+        if(!this.page.url().startsWith(`${actionsUrl}/runs/`) && !options.message) {
+            await this.page.goto(actionsUrl);
+            await this.page.locator(`a:has-text("${options.message}")`).first().click();
+            await this.page.waitForTimeout(3000);
+        }
+
+        if(options.screenshotName) {
+            // DEBUG: nothing to blur
+            await this.screenshot({
+				height: 500, 
+				name: options.screenshotName
+			});
+        }
+
+        // while(await this.page.locator('button.btn-danger:has-text("Cancel workflow")').isVisible()) {
+        //     await this.page.waitForTimeout(10000);
+        // };
+        await this.page.locator('summary.btn[role="button"]:has-text("Re-run all jobs")').click({trial: true});
     }
 
     async deleteFork() {

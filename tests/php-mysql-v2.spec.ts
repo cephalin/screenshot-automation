@@ -4,9 +4,7 @@ import '../lib/appServiceLibrary';
 import { AppServiceScmPage, MenuOptions } from '../lib/appServiceLibrary';
 
 var appName = "msdocs-laravel-mysql-234";
-//var appName = "asdfasdfasfe";
 var resourceGroupName = "msdocs-laravel-mysql-tutorial";
-//var resourceGroupName = "msdocs-laravel-mysql-402_group";
 var region = "West Europe";
 var runtime = "PHP 8.0";
 var screenshotCreate1 = "azure-portal-create-app-mysql-1";
@@ -42,13 +40,13 @@ test('tutorial-php-mysql-app', async ({ context }, testInfo) => {
 
     const azPage = new AzurePortalPage(await context.newPage(), testInfo);
     await azPage.signin();
-    const githubPage = new GitHubPage(await context.newPage(), testInfo);
+    const githubPage = new GitHubPage(await context.newPage(), {testInfo: testInfo});
     await githubPage.signin();
 
-    // // Create App+DB
-    // await azPage.searchAndGo(SearchType.marketplace, "web app database", { itemText: "Web App + Database", screenshotName: screenshotCreate1});
-    // await azPage.runAppDbCreateWizard('Visual Studio Ultimate with MSDN', resourceGroupName, region, appName, runtime, screenshotCreate2);
-    // await azPage.goToCreatedResource(screenshotCreate3);
+    // Create App+DB
+    await azPage.searchAndGo(SearchType.marketplace, "web app database", { itemText: "Web App + Database", screenshotName: screenshotCreate1});
+    await azPage.runAppDbCreateWizard('Visual Studio Ultimate with MSDN', resourceGroupName, region, appName, runtime, screenshotCreate2);
+    await azPage.goToCreatedResource(screenshotCreate3);
 
     // Connection string
     await azPage.goToAppServicePageByMenu(MenuOptions.configuration, screenshotConnect1);
@@ -63,38 +61,39 @@ test('tutorial-php-mysql-app', async ({ context }, testInfo) => {
     await azPage.newAppServiceSettingNoSave('DB_USERNAME', user);
     await azPage.newAppServiceSettingNoSave('DB_PASSWORD', password);
     await azPage.newAppServiceSettingNoSave('APP_DEBUG', 'true');
-    // await azPage.newAppServiceSettingNoSave('MYSQL_ATTR_SSL_CA', '/ssl/DigiCertGlobalRootCA.crt.pem');
+    await azPage.newAppServiceSettingNoSave('MYSQL_ATTR_SSL_CA', '/home/site/wwwroot/ssl/DigiCertGlobalRootCA.crt.pem');
     await azPage.newAppServiceSettingNoSave('APP_KEY', 'base64:Dsz40HWwbCqnq0oxMsjq7fItmKIeBfCBGORfspaI1Kw=');
     await azPage.saveAppServiceConfigurationPage(screenshotConnect4);
 
     // Deploy
     await githubPage.createFork('https://github.com/Azure-Samples/laravel-tasks', screenshotDeploy1);
+    await githubPage.page.goto('https://github.com/lcephas/laravel-tasks');
+    githubPage.repoUrl = 'https://github.com/lcephas/laravel-tasks';
+    await githubPage.openVSCode({screenshotName: screenshotDeploy2});
+    await githubPage.viewOrModifyFileInVSC({
+        filepath: 'config/database.php', 
+        searchOrReplace: [
+            // {searchLine: "'host' => env('DB_HOST', '127.0.0.1'),"},
+            {searchLine: "'database'  => env('DB_DATABASE', 'forge'),"},
+            // {searchLine: "'username'  => env('DB_USERNAME', 'forge'),"},
+            // {searchLine: "'password'  => env('DB_PASSWORD', ''),"},
+            // {searchLine: "PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),"}
+        ], 
+        screenshotName: screenshotDeploy3
+    });
+
     await azPage.searchAndGo(SearchType.resources, appName, {resourceType: 'App Service'});
-    await azPage.goToAppServicePageByMenu(MenuOptions.deploymentcenter, screenshotDeploy2);
+    await azPage.goToAppServicePageByMenu(MenuOptions.deploymentcenter, screenshotDeploy4);
     if(process.env.GITHUB_USER) {
-        await azPage.configureGitHubActionsDeploy(process.env.GITHUB_USER, 'laravel-tasks', 'main', screenshotDeploy3);
+        await azPage.configureGitHubActionsDeploy(process.env.GITHUB_USER, 'laravel-tasks', 'main', screenshotDeploy5);
     }
 
-    const [popup] = await azPage.goToGitHubActionsLogs(screenshotDeploy4);
-    var popupPage = new GitHubPage(popup);
-    popupPage.repoUrl = githubPage.repoUrl; // TODO: this is not pretty. need a better solution.
-    await popupPage.cancelWorkflow();
-    await popup.close();
+    const popupPage = await azPage.goToGitHubActionsLogs(screenshotDeploy6);
+    await popupPage.waitForActionRun({screenshotName: screenshotDeploy7});
+    await popupPage.page.close();
 
-    await githubPage.openVSCode({clickCodeTab: true, screenshotName: screenshotDeploy5});
-    await githubPage.modifyLinesInFileInVSC(
-        [{
-            searchLine: "PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),",
-            replaceLine: "PDO::MYSQL_ATTR_SSL_KEY    => '/ssl/BaltimoreCyberTrustRoot.crt.pem',",
-        }], 
-        {filepath: 'config/database.php', screenshotName: screenshotDeploy6}
-    );
-    await githubPage.commitAllChangesInVSC('add certificate', screenshotDeploy7);
-    await githubPage.waitForActionRun('add certificate');
-    
     // Run DB migration in SSH
-    const [ssh] = await azPage.openSshShellToContainer({clickMenu: true, screenshotName: screenshotMigrate1});
-    const sshPage = new AppServiceScmPage(ssh, testInfo);
+    const sshPage = await azPage.openSshShellToContainer({clickMenu: true, screenshotName: screenshotMigrate1});
     await sshPage.runSshShellCommands(
         [
             {command: 'cd /home/site/wwwroot', timeout: 0}, 
@@ -112,6 +111,8 @@ test('tutorial-php-mysql-app', async ({ context }, testInfo) => {
     await azPage.goToAppServiceConfigurationGeneralSettings(screenshotPublic1);
     const configurationFrame = azPage.page.frameLocator('[data-contenttitle="Configuration"] iframe');
     await configurationFrame.locator('input#linux-fx-version-appCommandLine').type('cp /home/site/wwwroot/default /etc/nginx/sites-available/default && service nginx reload');
+    // DEBUG: manually blur
+    await azPage.page.mouse.click(0,0);
     await azPage.screenshot({
         locator: azPage.page.locator('.fxs-blade-firstblade .fxs-blade-content-container-details'),
         height: 500, 
@@ -122,9 +123,6 @@ test('tutorial-php-mysql-app', async ({ context }, testInfo) => {
         name: screenshotPublic2
     });
     await azPage.saveAppServiceConfigurationPage();
-
-        // debug
-    await azPage.searchAndGo(SearchType.resources, appName, {resourceType: 'App Service'});
 
     // Browse to web app
     const [browse] = await azPage.browseAppServiceUrl(screenshotBrowse1);

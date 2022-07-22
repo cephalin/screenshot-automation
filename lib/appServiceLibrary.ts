@@ -4,7 +4,7 @@
  * - AppServiceScmPage class
  *****************************************************************************/
 import { expect, Locator, Page, TestInfo } from '@playwright/test';
-import { AzurePortalPage, DocsPageBase } from './docsFixtures';
+import { AzurePortalPage, DocsPageBase, GitHubPage } from './docsFixtures';
 
 
 // Common App Service menu selectors - not the full list
@@ -70,12 +70,12 @@ declare module './docsFixtures' {
 
         goToGitHubActionsLogs (
             screenshotName?: string
-        ): Promise<[any, any]>;
+        ): Promise<GitHubPage>;
 
         openSshShellToContainer (options?: {
             clickMenu?: boolean,
             screenshotName?: string
-        }): Promise<[any, any]>;
+        }): Promise<AppServiceScmPage>;
 
         goToAppServiceConfigurationGeneralSettings (
             screenshotName?: string
@@ -112,6 +112,9 @@ AzurePortalPage.prototype.newAppServiceSettingNoSave = async function (
     await configurationFrame.locator('input#app-settings-edit-value').fill(value);
   
     if(screenshotName){
+        // DEBUG: manually blur
+        await this.page.mouse.click(this.page.viewportSize()?.width / 2, 0);
+
         await this.screenshot({
             locator: this.page.locator('.fxs-blade-firstblade .fxs-blade-content-container-details'),
             height: 500, 
@@ -153,6 +156,9 @@ AzurePortalPage.prototype.getAppServiceConnectionString = async function(
     await configurationFrame.locator('#app-settings-connection-strings-table button#app-settings-connection-strings-name-0').click();
 
     if(screenshotName){
+        // DEBUG: manually blur
+        await this.page.mouse.click(this.page.viewportSize()?.width / 2, 0);
+
         await this.screenshot({
             locator: this.page.locator('.fxs-blade-firstblade .fxs-blade-content-container-details'),
             height: 500, 
@@ -183,6 +189,7 @@ AzurePortalPage.prototype.goToAppServicePageByMenu = async function(
     await this.page.waitForTimeout(3000);
 
     if(screenshotName){
+        // DEBUG: no need to blur
         await this.screenshot({
             locator: this.page.locator('.fxs-blade-display-in-journey .fxs-blade-content-container-default'),
             height: 500, 
@@ -203,6 +210,7 @@ AzurePortalPage.prototype.saveAppServiceConfigurationPage = async function (
     //await configurationFrame.locator('#app-settings-application-settings-table').scrollIntoViewIfNeeded();
 
     if(screenshotName){
+        // DEBUG: no need to blur 
         await this.screenshot({
             locator: this.page.locator('.fxs-blade-firstblade .fxs-blade-content-container-details'),
             height: 700, 
@@ -255,6 +263,10 @@ AzurePortalPage.prototype.runAppDbCreateWizard = async function(
             this.page.locator('[aria-label="Review and create"]')
         ];
 
+        // DEBUG: manually blur
+        // await this.page.locator('.fxs-blade-title-titleText').last().click();
+        await this.page.mouse.click(this.page.viewportSize()?.width / 2, 0);
+
         await this.screenshot({
             locator: this.page.locator('.fxs-journey-layout'),
             height: 900,
@@ -285,8 +297,12 @@ AzurePortalPage.prototype.configureGitHubActionsDeploy = async function (
     await deploymentFrame.locator(`button[role="option"]:has-text("${branch}")`).click();
   
     if(screenshotName){
+
+        // DEBUG: manually blur
+        // await this.page.locator('.fxs-blade-title-titleText').last().click();
+        await this.page.mouse.click(this.page.viewportSize()?.width / 2, 0);
+
         await this.screenshot({
-            locator: deploymentFrame.locator('body'),
             height: 1000, 
             highlightobjects: [
                 deploymentFrame.locator('[aria-label="Source"]'),
@@ -304,7 +320,7 @@ AzurePortalPage.prototype.configureGitHubActionsDeploy = async function (
 
 AzurePortalPage.prototype.goToGitHubActionsLogs = async function (
     screenshotName?: string
-): Promise<[any, any]> {
+): Promise<GitHubPage> {
 
     var deploymentFrame = await this.page.frameLocator('[data-contenttitle="Deployment Center"] iframe');
 
@@ -314,6 +330,8 @@ AzurePortalPage.prototype.goToGitHubActionsLogs = async function (
     await deploymentFrame.locator('button:has-text("Build/Deploy Logs")').first().click({trial: true});
   
     if(screenshotName){
+
+        // DEBUG: no need to blur
         await this.screenshot({
             height: 500, 
             highlightobjects: [
@@ -325,17 +343,20 @@ AzurePortalPage.prototype.goToGitHubActionsLogs = async function (
     }
 
     // Go to GitHub now. The button opens a new tab so we need to follow that.
-    return await Promise.all([
+    const [popup] = await Promise.all([
         this.page.waitForEvent('popup'),
         deploymentFrame.locator('button:has-text("Build/Deploy Logs")').first().click() // Opens a new tab
     ])
   
+    let temp = new GitHubPage(popup, {repoUrl: (popup as Page).url().replace(/\/actions\/runs\/[0-9]+/, '') });
+    temp.screenshotDir = this.screenshotDir; // TODO: not pretty. should fix
+    return temp;
 }
 
 AzurePortalPage.prototype.openSshShellToContainer = async function (options?: {
     clickMenu?: boolean,
     screenshotName?: string
-}): Promise<[any, any]> {
+}): Promise<AppServiceScmPage> {
 
     options = options ? options : {};
 
@@ -347,18 +368,22 @@ AzurePortalPage.prototype.openSshShellToContainer = async function (options?: {
     highlighted.push(this.page.locator('a[href*=".scm.azurewebsites.net/webssh/host"]').first());
 
     if(options.screenshotName){
+        // DEBUG: no need to blur
         await this.screenshot({
-            locator: options.clickMenu ? this.page.locator('.fxs-blade-firstblade .fxs-blade-content-container-details') : undefined,
             height: 500, 
             highlightobjects: highlighted, 
             name: options.screenshotName
         });    
     }
 
-	return await Promise.all([
+	const [popup] = await Promise.all([
 		this.page.waitForEvent('popup'),
 		this.page.locator('a[href*=".scm.azurewebsites.net/webssh/host"]').first().click() // Opens a new tab
 	]);
+
+    let temp = new AppServiceScmPage(popup);
+    temp.screenshotDir = this.screenshotDir; // TODO: not pretty. should fix
+    return temp;
 }
 
 AzurePortalPage.prototype.goToAppServiceConfigurationGeneralSettings = async function (
@@ -371,6 +396,7 @@ AzurePortalPage.prototype.goToAppServiceConfigurationGeneralSettings = async fun
     await configurationFrame.locator('button#app-settings-general-settings-tab').evaluateHandle(el => el.setAttribute("style", "border: 3px solid red !important;"));
   
     if(screenshotName){
+        // DEBUG: no need to blur
         await this.screenshot({
             height: 500, 
             highlightobjects: [
@@ -397,6 +423,7 @@ AzurePortalPage.prototype.browseAppServiceUrl = async function (
     await this.page.locator('.fxc-essentials-label-container:has-text("URL") ~ .fxc-essentials-value-wrapper').evaluateHandle(el => el.setAttribute("style", "border: 3px solid red !important;"));
   
     if(screenshotName){
+        // DEBUG: no need to blur
         await this.screenshot({
             height: 500, 
             highlightobjects: [
@@ -422,6 +449,7 @@ AzurePortalPage.prototype.enableAppServiceLinuxLogs = async function (
     await this.page.locator('.fxs-blade-content-container-details .azc-optionPicker-item:has-text("File System")').click();
 
     if(screenshotName){
+        // DEBUG: no need to blur
         await this.screenshot({
             height: 500, 
             highlightobjects: [
@@ -447,6 +475,7 @@ AzurePortalPage.prototype.streamAppServiceLogs = async function (
     await this.page.waitForTimeout(10000); // wait for logs to show up
 
     if(screenshotName){
+        // DEBUG: no need to blur
         await this.screenshot({
             height: 500, 
             highlightobjects: [
@@ -464,7 +493,7 @@ AzurePortalPage.prototype.streamAppServiceLogs = async function (
  *****************************************************************************/
 export class AppServiceScmPage extends DocsPageBase {
 
-    constructor(page: Page, testInfo: TestInfo) {
+    constructor(page: Page, testInfo?: TestInfo) {
         super(page, testInfo)
     }
 
@@ -493,6 +522,7 @@ export class AppServiceScmPage extends DocsPageBase {
         options.height = options.height ? options.height : 700;
 
         // Make sure we're in the browser SSH shell of an app
+        await this.page.waitForLoadState();
         await expect(this.page).toHaveURL(new RegExp(/^https:\/\/(\w|-)+.scm.azurewebsites.net\/webssh\/host$/));
 
         while((await this.page.locator('div#status').innerText()) != "SSH CONNECTION ESTABLISHED") {
@@ -509,6 +539,7 @@ export class AppServiceScmPage extends DocsPageBase {
         }
     
         if(options.screenshotName){
+            // DEBUG: no need to blur
             await this.screenshot({
                 width: options.width,
                 height: options.height, 
