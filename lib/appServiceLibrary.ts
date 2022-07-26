@@ -3,9 +3,10 @@
  * - App Service-specific extension methods for the AzurePortalPage class
  * - AppServiceScmPage class
  *****************************************************************************/
-import { expect, Locator, Page, TestInfo } from '@playwright/test';
-import { AzurePortalPage, DocsPageBase, GitHubPage } from './docsFixtures';
-
+import { expect, Locator, Page } from '@playwright/test';
+import { AppServiceScmPage } from './AppServiceScmPage';
+import { AzurePortalPage } from './AzurePortalPage';
+import { GitHubPage } from './GitHubPage';
 
 // Common App Service menu selectors - not the full list
 export enum MenuOptions {
@@ -14,10 +15,11 @@ export enum MenuOptions {
     deploymentcenter = '[data-telemetryname="Menu-vstscd"]',
     ssh = '[data-telemetryname="Menu-ssh"]',
     logsnative = '[data-telemetryname="Menu-appservicelogs"]',
-    logstream = '[data-telemetryname="Menu-logStream"]'
+    logstream = '[data-telemetryname="Menu-logStream"]',
+    kudu = '[data-telemetryname="Menu-kudu"]'
 }
 
-declare module './docsFixtures' {
+declare module './AzurePortalPage' {
     interface AzurePortalPage {
     
         runAppDbCreateWizard (
@@ -73,6 +75,11 @@ declare module './docsFixtures' {
         ): Promise<GitHubPage>;
 
         openSshShellToContainer (options?: {
+            clickMenu?: boolean,
+            screenshotName?: string
+        }): Promise<AppServiceScmPage>;
+
+        openAppServiceKudu (options?: {
             clickMenu?: boolean,
             screenshotName?: string
         }): Promise<AppServiceScmPage>;
@@ -250,7 +257,7 @@ AzurePortalPage.prototype.runAppDbCreateWizard = async function(
     await this.page.locator('[placeholder="Web App name\\."]').fill(appName);
     await this.page.locator('text=Select a runtime stack').click();
     await this.page.locator('div[role="treeitem"]:has-text("' + stack + '")').click();
-    await expect(this.page.locator('.fxc-validation')).toHaveCount(0); // wait for validation warnings to disappear
+    await expect(this.page.locator('.fxc-validation')).toHaveCount(0, {timeout: 10000}); // wait for validation warnings to disappear
 
     if(screenshotName){
         var highlighted = [
@@ -386,6 +393,39 @@ AzurePortalPage.prototype.openSshShellToContainer = async function (options?: {
     return temp;
 }
 
+AzurePortalPage.prototype.openAppServiceKudu = async function (options?: {
+    clickMenu?: boolean,
+    screenshotName?: string
+}): Promise<AppServiceScmPage> {
+
+    options = options ? options : {};
+
+    let highlighted: Locator[] = [];
+    if(options.clickMenu) {
+        await this.goToAppServicePageByMenu(MenuOptions.kudu);
+        highlighted.push(this.page.locator(MenuOptions.kudu));
+    }
+    highlighted.push(this.page.locator('a[href*=".scm.azurewebsites.net/"]').first());
+
+    if(options.screenshotName){
+        // DEBUG: no need to blur
+        await this.screenshot({
+            height: 500, 
+            highlightobjects: highlighted, 
+            name: options.screenshotName
+        });    
+    }
+
+	const [popup] = await Promise.all([
+		this.page.waitForEvent('popup'),
+		this.page.locator('a[href*=".scm.azurewebsites.net/"]').first().click() // Opens a new tab
+	]);
+
+    let temp = new AppServiceScmPage(popup);
+    temp.screenshotDir = this.screenshotDir; // TODO: not pretty. should fix
+    return temp;
+}
+
 AzurePortalPage.prototype.goToAppServiceConfigurationGeneralSettings = async function (
     screenshotName?: string
 ): Promise<void> {
@@ -487,71 +527,3 @@ AzurePortalPage.prototype.streamAppServiceLogs = async function (
 
 }
 
-/*****************************************************************************
- * AppServiceScmPage
- * - Common tasks on the SCM page (https://<appname>.scm.azurewebsites.net) 
- *****************************************************************************/
-export class AppServiceScmPage extends DocsPageBase {
-
-    constructor(page: Page, testInfo?: TestInfo) {
-        super(page, testInfo)
-    }
-
-    /**
-     * 
-     * @param commands 
-     * Array of commands and their timeouts
-     *   @param command
-     *   the command string.
-     *   @param timeout
-     *   timeout to wait after a command. default is 2000 ms
-     * @param options 
-     * Optional parameters
-     */
-    async runSshShellCommands(
-        commands: {command: string, timeout?: number}[], 
-        options?: {
-            width?: number, 
-            height?: number,
-            screenshotName?: string
-        }
-    ): Promise<void> {
-    
-        options = options ? options : {};
-        options.width = options.width ? options.width : 780;
-        options.height = options.height ? options.height : 700;
-
-        // Make sure we're in the browser SSH shell of an app
-        await this.page.waitForLoadState();
-        await expect(this.page).toHaveURL(new RegExp(/^https:\/\/(\w|-)+.scm.azurewebsites.net\/webssh\/host$/));
-
-        while((await this.page.locator('div#status').innerText()) != "SSH CONNECTION ESTABLISHED") {
-            await this.page.waitForTimeout(5000);
-        };
-
-        for (const c of commands) {
-            await this.executeInShell(this.page.locator('textarea.xterm-helper-textarea'), c.command);
-            if(c.timeout) {
-                await this.page.waitForTimeout(c.timeout);
-            } else {
-                await this.page.waitForTimeout(2000);
-            }     
-        }
-    
-        if(options.screenshotName){
-            // DEBUG: no need to blur
-            await this.screenshot({
-                width: options.width,
-                height: options.height, 
-                name: options.screenshotName
-            });    
-        }
-    }
-
-    private async executeInShell(shell, command) {
-        for (var i = 0; i < command.length; i++) {
-          await shell.press(command.charAt(i));
-        }
-        await shell.press("Enter");
-    }
-}

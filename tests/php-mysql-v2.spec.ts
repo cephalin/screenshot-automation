@@ -1,7 +1,9 @@
-import { test, expect, Page} from '@playwright/test';
-import { SearchType, GitHubPage, AzurePortalPage, DocsPageBase } from '../lib/docsFixtures';
+import { test} from '@playwright/test';
 import '../lib/appServiceLibrary';
-import { AppServiceScmPage, MenuOptions } from '../lib/appServiceLibrary';
+import { MenuOptions } from '../lib/appServiceLibrary';
+import { AzurePortalPage, SearchType } from '../lib/AzurePortalPage';
+import { DocsPageBase } from '../lib/DocsPageBase';
+import { GitHubPage } from '../lib/GitHubPage';
 
 var appName = "msdocs-laravel-mysql-234";
 var resourceGroupName = "msdocs-laravel-mysql-tutorial";
@@ -43,42 +45,36 @@ test('tutorial-php-mysql-app', async ({ context }, testInfo) => {
     const githubPage = new GitHubPage(await context.newPage(), {testInfo: testInfo});
     await githubPage.signin();
 
-    // Create App+DB
-    await azPage.searchAndGo(SearchType.marketplace, "web app database", { itemText: "Web App + Database", screenshotName: screenshotCreate1});
-    await azPage.runAppDbCreateWizard('Visual Studio Ultimate with MSDN', resourceGroupName, region, appName, runtime, screenshotCreate2);
-    await azPage.goToCreatedResource(screenshotCreate3);
+    // // Create App+DB
+    // await azPage.searchAndGo(SearchType.marketplace, "web app database", { itemText: "Web App + Database", screenshotName: screenshotCreate1});
+    // await azPage.runAppDbCreateWizard('Visual Studio Ultimate with MSDN', resourceGroupName, region, appName, runtime, screenshotCreate2);
+    // await azPage.goToCreatedResource(screenshotCreate3);
 
-    // Connection string
-    await azPage.goToAppServicePageByMenu(MenuOptions.configuration, screenshotConnect1);
-    await azPage.newAppServiceSettingNoSave('DB_DATABASE', appName + "-database", screenshotConnect2);
-    var result = await azPage.getAppServiceConnectionString('defaultConnection', screenshotConnect3);
-    var settings = result.value.split(';');
-    var database = settings[0].split('=')[1];
-    var server = settings[1].split('=')[1];
-    var user = settings[2].split('=')[1];
-    var password = settings[3].split('=')[1];
-    await azPage.newAppServiceSettingNoSave('DB_HOST', server);
-    await azPage.newAppServiceSettingNoSave('DB_USERNAME', user);
-    await azPage.newAppServiceSettingNoSave('DB_PASSWORD', password);
-    await azPage.newAppServiceSettingNoSave('APP_DEBUG', 'true');
-    await azPage.newAppServiceSettingNoSave('MYSQL_ATTR_SSL_CA', '/home/site/wwwroot/ssl/DigiCertGlobalRootCA.crt.pem');
-    await azPage.newAppServiceSettingNoSave('APP_KEY', 'base64:Dsz40HWwbCqnq0oxMsjq7fItmKIeBfCBGORfspaI1Kw=');
-    await azPage.saveAppServiceConfigurationPage(screenshotConnect4);
+    // // Connection string
+    // await azPage.goToAppServicePageByMenu(MenuOptions.configuration, screenshotConnect1);
+    // await azPage.newAppServiceSettingNoSave('DB_DATABASE', appName + "-database", screenshotConnect2);
+    // var result = await azPage.getAppServiceConnectionString('defaultConnection', screenshotConnect3);
+    // var settings = result.value.split(';');
+    // var database = settings[0].split('=')[1];
+    // var server = settings[1].split('=')[1];
+    // var user = settings[2].split('=')[1];
+    // var password = settings[3].split('=')[1];
+    // await azPage.newAppServiceSettingNoSave('DB_HOST', server);
+    // await azPage.newAppServiceSettingNoSave('DB_USERNAME', user);
+    // await azPage.newAppServiceSettingNoSave('DB_PASSWORD', password);
+    // await azPage.newAppServiceSettingNoSave('APP_DEBUG', 'true');
+    // await azPage.newAppServiceSettingNoSave('MYSQL_ATTR_SSL_CA', '/home/site/wwwroot/ssl/DigiCertGlobalRootCA.crt.pem');
+    // await azPage.newAppServiceSettingNoSave('APP_KEY', 'base64:Dsz40HWwbCqnq0oxMsjq7fItmKIeBfCBGORfspaI1Kw=');
+    // await azPage.saveAppServiceConfigurationPage(screenshotConnect4);
 
     // Deploy
     await githubPage.createFork('https://github.com/Azure-Samples/laravel-tasks', screenshotDeploy1);
     await githubPage.page.goto('https://github.com/lcephas/laravel-tasks');
     githubPage.repoUrl = 'https://github.com/lcephas/laravel-tasks';
     await githubPage.openVSCode({screenshotName: screenshotDeploy2});
-    await githubPage.viewOrModifyFileInVSC({
+    await githubPage.viewFileInVSC({
         filepath: 'config/database.php', 
-        searchOrReplace: [
-            // {searchLine: "'host' => env('DB_HOST', '127.0.0.1'),"},
-            {searchLine: "'database'  => env('DB_DATABASE', 'forge'),"},
-            // {searchLine: "'username'  => env('DB_USERNAME', 'forge'),"},
-            // {searchLine: "'password'  => env('DB_PASSWORD', ''),"},
-            // {searchLine: "PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),"}
-        ], 
+        regex: `(?<='mysql' =>((.|\\n)*?))(DB_HOST|DB_DATABASE|DB_USERNAME|DB_PASSWORD|(?<=env\\(')MYSQL_ATTR_SSL_CA)(?=(.|\\n)*?'pgsql' =>)`,
         screenshotName: screenshotDeploy3
     });
 
