@@ -104,7 +104,7 @@ test('app+db', async ({ page }, workerInfo) => {
   // Start the create wizard
   await page.locator('text=Web App + Database').click();
   await page.locator('[aria-label="Subscription selector"]').click();
-  await page.locator('div[role="treeitem"]:has-text("Visual Studio Ultimate with MSDN")').click();
+  await page.locator('div[role="treeitem"]:has-text("Visual Studio Enterprise Subscription")').click();
   await page.locator('text=Create new').click();
   await page.locator('[placeholder="Create new"]').click();
   await page.locator('[placeholder="Create new"]').fill(resourceGroupName);

@@ -39,14 +39,15 @@ test('tutorial-nodejs-mongodb-app', async ({ azPage, githubPage }) => {
 
     // Create App+DB
     await azPage.searchAndGo(SearchType.marketplace, "web app database", { itemText: "Web App + Database", screenshotName: screenshotCreate1});
-    await azPage.runAppDbCreateWizard('Visual Studio Ultimate with MSDN', resourceGroupName, region, appName, runtime, screenshotCreate2);
+    await azPage.runAppDbCreateWizard('Visual Studio Enterprise Subscription', resourceGroupName, region, appName, runtime, screenshotCreate2);
     await azPage.goToCreatedResource(screenshotCreate3);
 
     // Connection string
     await azPage.goToAppServicePageByMenu(MenuOptions.configuration, screenshotConnect1);
     var result = await azPage.getAppServiceConnectionString('MONGODB_URI', screenshotConnect2);
     azPage.newAppServiceSettingNoSave('DATABASE_URL', result.value, screenshotConnect3);
-    azPage.newAppServiceSettingNoSave('DATABASE_NAME', `${appName}-database`, screenshotConnect4);
+    azPage.newAppServiceSettingNoSave('DATABASE_NAME', `${appName}-database`);
+    await azPage.saveAppServiceConfigurationPage(screenshotConnect4);
 
     // Deploy
     await githubPage.createFork('https://github.com/Azure-Samples/msdocs-nodejs-mongodb-azure-sample-app', screenshotDeploy1);

@@ -59,6 +59,10 @@ declare module './AzurePortalPage' {
             screenshotName?: string
         ): Promise<{value: string, type: string}>;
 
+        viewAppServiceAppSettings (
+            screenshotName?: string
+        ): Promise<void>;
+        
         saveAppServiceConfigurationPage (
             screenshotName?: string
         ): Promise<void>;
@@ -96,9 +100,10 @@ declare module './AzurePortalPage' {
             screenshotName?: string
         ): Promise<void>;
 
-        streamAppServiceLogs (
+        streamAppServiceLogs  (options?: {
+            searchStrings?: string[],
             screenshotName?: string
-        ): Promise<void>
+        }): Promise<void>;
     }    
 }
 
@@ -143,6 +148,34 @@ AzurePortalPage.prototype.getAppServiceSetting = async function (
     screenshotName?: string
 ): Promise<string> {
     return "";
+}
+
+const appServiceUrlRegEx = `\/resource\/subscriptions\/[{]?[0-9a-fA-F]{8}-([0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}[}]?\/resourceGroups\/[\\w-]*\/providers\/Microsoft.Web\/sites\/[\\w-]*`;
+
+AzurePortalPage.prototype.viewAppServiceAppSettings = async function (
+    screenshotName?: string
+): Promise<void> {
+    await this.page.waitForTimeout(5000);
+    expect(this.page.url()).toMatch(new RegExp(`${appServiceUrlRegEx}\/configuration`));
+
+    var configurationFrame = this.page.frameLocator('[data-contenttitle="Configuration"] iframe');
+    // make sure we're in the application settings tab
+    await configurationFrame.locator('#app-settings-application-settings-tab').click();
+
+    if(screenshotName){
+        // DEBUG: manually blur
+        await this.page.mouse.click(this.page.viewportSize()?.width / 2, 0);
+
+        await this.screenshot({
+            locator: this.page.locator('.fxs-blade-firstblade .fxs-blade-content-container-details'),
+            height: 700, 
+            highlightobjects: [
+                configurationFrame.locator("#app-settings-application-settings-table")
+            ], 
+            name: screenshotName
+        });    
+    }
+
 }
 
 AzurePortalPage.prototype.newAppServiceConnectionStringNoSave = async function (
@@ -191,6 +224,8 @@ AzurePortalPage.prototype.goToAppServicePageByMenu = async function(
     screenshotName?: string
 ): Promise<void> {
     
+    expect(this.page).toHaveURL(new RegExp(appServiceUrlRegEx), {timeout: 10000});
+
     var menuItem = this.page.locator(option);
     await expect (menuItem).toBeEnabled({timeout: 10000});
     await this.page.waitForTimeout(3000);
@@ -245,18 +280,18 @@ AzurePortalPage.prototype.runAppDbCreateWizard = async function(
 ): Promise<void> {
 
     await this.page.locator('[aria-label="Subscription selector"]').click();
-    await this.page.locator('div[role="treeitem"]:has-text("Visual Studio Ultimate with MSDN")').click();
+    await this.page.locator('div[role="treeitem"]:has-text("Visual Studio Enterprise Subscription")').click();
     await this.page.locator('text=Create new').click();
     await this.page.locator('[placeholder="Create new"]').click();
     await this.page.locator('[placeholder="Create new"]').fill(resourceGroupName);
     await this.page.locator('div[role="button"]:has-text("OK")').click();
     await this.page.locator('[aria-label="Location selector"]').click();
-    await this.page.locator('div[role="treeitem"]:has-text("' + region + '")').waitFor({state: 'visible', timeout: 10000});
-    await this.page.locator('div[role="treeitem"]:has-text("' + region + '")').click();
+    await this.page.locator(`div[role="treeitem"]:has(:text-is("${region}"))`).waitFor({state: 'visible', timeout: 10000});
+    await this.page.locator(`div[role="treeitem"]:has(:text-is("${region}"))`).click();
     await this.page.locator('[placeholder="Web App name\\."]').click();
     await this.page.locator('[placeholder="Web App name\\."]').fill(appName);
     await this.page.locator('text=Select a runtime stack').click();
-    await this.page.locator('div[role="treeitem"]:has-text("' + stack + '")').click();
+    await this.page.locator(`div[role="treeitem"]:has(:text-is("${stack}"))`).click();
     await expect(this.page.locator('.fxc-validation')).toHaveCount(0, {timeout: 10000}); // wait for validation warnings to disappear
 
     if(screenshotName){
@@ -296,14 +331,14 @@ AzurePortalPage.prototype.configureGitHubActionsDeploy = async function (
     var deploymentFrame = await this.page.frameLocator('[data-contenttitle="Deployment Center"] iframe');
     await deploymentFrame.locator('span:has-text("")').click();
     await deploymentFrame.locator('button[role="option"]:has-text("GitHub")').click();
-    await deploymentFrame.locator('text=Organization* >> button[role="presentation"]').click();
-    await deploymentFrame.locator(`button[role="option"]:has-text("${username}")`).click();
-    await deploymentFrame.locator('text=Repository* >> button[role="presentation"]').click();
-    await deploymentFrame.locator(`button[role="option"]:has-text("${reponame}")`).click();
-    await deploymentFrame.locator('text=Branch* >> button[role="presentation"]').click();
-    await deploymentFrame.locator(`button[role="option"]:has-text("${branch}")`).click();
-  
+
+    // We must take screenshot earlier because the organization box is "sensitive content"
+    // and you cannot freely manipulate it (data-bound)
     if(screenshotName){
+        // HACK: put values in placeholder attribute for the screenshot
+        deploymentFrame.locator('#deployment-center-settings-organization-option-input').evaluate(e => e.setAttribute('placeholder', '<github-alias>'));
+        deploymentFrame.locator('#deployment-center-settings-repository-option-input').evaluate((e, reponame) => e.setAttribute('placeholder', reponame), reponame);
+        deploymentFrame.locator('#deployment-center-settings-branch-option-input').evaluate((e, branch) => e.setAttribute('placeholder', branch), branch);
 
         // DEBUG: manually blur
         // await this.page.locator('.fxs-blade-title-titleText').last().click();
@@ -316,13 +351,21 @@ AzurePortalPage.prototype.configureGitHubActionsDeploy = async function (
                 deploymentFrame.locator('#deployment-center-settings-organization-option'),
                 deploymentFrame.locator('#deployment-center-settings-repository-option'),
                 deploymentFrame.locator('#deployment-center-settings-branch-option'),
-                deploymentFrame.locator('[aria-label="Deployment center save command"]')
+                deploymentFrame.locator('button[aria-label="Deployment center save command"]')
             ], 
             name: screenshotName
         });    
     }
 
-    await deploymentFrame.locator('[aria-label="Deployment center save command"]').click();
+    await deploymentFrame.locator('text=Organization* >> button[role="presentation"]').click();
+    await deploymentFrame.locator(`button[role="option"]:has-text("${username}")`).click();
+    await deploymentFrame.locator('text=Repository* >> button[role="presentation"]').click();
+    await deploymentFrame.locator(`button[role="option"]:has-text("${reponame}")`).click();
+    await deploymentFrame.locator('text=Branch* >> button[role="presentation"]').click();
+    await deploymentFrame.locator(`button[role="option"]:has-text("${branch}")`).click();
+  
+    await deploymentFrame.locator('button[aria-label="Deployment center save command"]').click();
+    await this.clearNotification("Successfully setup GitHub Action build and deployment pipeline.");  
 }
 
 AzurePortalPage.prototype.goToGitHubActionsLogs = async function (
@@ -342,7 +385,7 @@ AzurePortalPage.prototype.goToGitHubActionsLogs = async function (
         await this.screenshot({
             height: 500, 
             highlightobjects: [
-                deploymentFrame.locator('button:has-text("Build/Deploy Logs")'),
+                deploymentFrame.locator('button:has-text("Build/Deploy Logs")').first(),
                 deploymentFrame.locator('[aria-label="Deployment center logs"]')
             ], 
             name: screenshotName
@@ -507,21 +550,32 @@ AzurePortalPage.prototype.enableAppServiceLinuxLogs = async function (
     await this.clearNotification("Successfully updated App Service logs settings");  
 }
 
-AzurePortalPage.prototype.streamAppServiceLogs = async function (
+AzurePortalPage.prototype.streamAppServiceLogs = async function (options?: {
+    searchStrings?: string[],
     screenshotName?: string
-): Promise<void> {
+}): Promise<void> {
 
     await this.goToAppServicePageByMenu(MenuOptions.logstream);
     await this.page.waitForTimeout(10000); // wait for logs to show up
 
-    if(screenshotName){
+    let highlighted = [
+        this.page.locator(MenuOptions.logstream)
+    ];
+    for (const s in options?.searchStrings) {
+        const match = this.page.frameLocator('.fxs-blade-content-container-details-primary .fxs-part-frame').locator(':text("' + options?.searchStrings[s] + '")');
+        const count = await match.count();
+        await this.page.pause();
+        for (var i = 0; i < count; i++) {
+            highlighted.push(match.nth(i));
+        }
+    }
+
+    if(options?.screenshotName){
         // DEBUG: no need to blur
         await this.screenshot({
             height: 500, 
-            highlightobjects: [
-                this.page.locator(MenuOptions.logstream)
-            ], 
-            name: screenshotName
+            highlightobjects: highlighted, 
+            name: options.screenshotName
         });
     }
 

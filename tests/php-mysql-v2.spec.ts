@@ -45,27 +45,32 @@ test('tutorial-php-mysql-app', async ({ context }, testInfo) => {
     const githubPage = new GitHubPage(await context.newPage(), {testInfo: testInfo});
     await githubPage.signin();
 
-    // // Create App+DB
-    // await azPage.searchAndGo(SearchType.marketplace, "web app database", { itemText: "Web App + Database", screenshotName: screenshotCreate1});
-    // await azPage.runAppDbCreateWizard('Visual Studio Ultimate with MSDN', resourceGroupName, region, appName, runtime, screenshotCreate2);
-    // await azPage.goToCreatedResource(screenshotCreate3);
+    // add to sensitive text list
+    azPage.sensitiveStrings.push({searchString: 'lcephas', replacement: '&lt;github-alias&gt;'});
+    githubPage.sensitiveStrings.push({searchString: 'cephalin', replacement: 'somebody'});
+    githubPage.sensitiveStrings.push({searchString: 'lcephas', replacement: '&lt;github-alias&gt;'});
 
-    // // Connection string
-    // await azPage.goToAppServicePageByMenu(MenuOptions.configuration, screenshotConnect1);
-    // await azPage.newAppServiceSettingNoSave('DB_DATABASE', appName + "-database", screenshotConnect2);
-    // var result = await azPage.getAppServiceConnectionString('defaultConnection', screenshotConnect3);
-    // var settings = result.value.split(';');
-    // var database = settings[0].split('=')[1];
-    // var server = settings[1].split('=')[1];
-    // var user = settings[2].split('=')[1];
-    // var password = settings[3].split('=')[1];
-    // await azPage.newAppServiceSettingNoSave('DB_HOST', server);
-    // await azPage.newAppServiceSettingNoSave('DB_USERNAME', user);
-    // await azPage.newAppServiceSettingNoSave('DB_PASSWORD', password);
-    // await azPage.newAppServiceSettingNoSave('APP_DEBUG', 'true');
-    // await azPage.newAppServiceSettingNoSave('MYSQL_ATTR_SSL_CA', '/home/site/wwwroot/ssl/DigiCertGlobalRootCA.crt.pem');
-    // await azPage.newAppServiceSettingNoSave('APP_KEY', 'base64:Dsz40HWwbCqnq0oxMsjq7fItmKIeBfCBGORfspaI1Kw=');
-    // await azPage.saveAppServiceConfigurationPage(screenshotConnect4);
+    // Create App+DB
+    await azPage.searchAndGo(SearchType.marketplace, "web app database", { itemText: "Web App + Database", screenshotName: screenshotCreate1});
+    await azPage.runAppDbCreateWizard('Visual Studio Enterprise Subscription', resourceGroupName, region, appName, runtime, screenshotCreate2);
+    await azPage.goToCreatedResource(screenshotCreate3);
+
+    // Connection string
+    await azPage.goToAppServicePageByMenu(MenuOptions.configuration, screenshotConnect1);
+    await azPage.newAppServiceSettingNoSave('DB_DATABASE', appName + "-database", screenshotConnect2);
+    var result = await azPage.getAppServiceConnectionString('defaultConnection', screenshotConnect3);
+    var settings = result.value.split(';');
+    var database = settings[0].split('=')[1];
+    var server = settings[1].split('=')[1];
+    var user = settings[2].split('=')[1];
+    var password = settings[3].split('=')[1];
+    await azPage.newAppServiceSettingNoSave('DB_HOST', server);
+    await azPage.newAppServiceSettingNoSave('DB_USERNAME', user);
+    await azPage.newAppServiceSettingNoSave('DB_PASSWORD', password);
+    await azPage.newAppServiceSettingNoSave('APP_DEBUG', 'true');
+    await azPage.newAppServiceSettingNoSave('MYSQL_ATTR_SSL_CA', '/home/site/wwwroot/ssl/DigiCertGlobalRootCA.crt.pem');
+    await azPage.newAppServiceSettingNoSave('APP_KEY', 'base64:Dsz40HWwbCqnq0oxMsjq7fItmKIeBfCBGORfspaI1Kw=');
+    await azPage.saveAppServiceConfigurationPage(screenshotConnect4);
 
     // Deploy
     await githubPage.createFork('https://github.com/Azure-Samples/laravel-tasks', screenshotDeploy1);
@@ -78,13 +83,15 @@ test('tutorial-php-mysql-app', async ({ context }, testInfo) => {
         screenshotName: screenshotDeploy3
     });
 
-    await azPage.searchAndGo(SearchType.resources, appName, {resourceType: 'App Service'});
+    //await azPage.searchAndGo(SearchType.resources, appName, {resourceType: 'App Service'});
     await azPage.goToAppServicePageByMenu(MenuOptions.deploymentcenter, screenshotDeploy4);
     if(process.env.GITHUB_USER) {
         await azPage.configureGitHubActionsDeploy(process.env.GITHUB_USER, 'laravel-tasks', 'main', screenshotDeploy5);
     }
 
     const popupPage = await azPage.goToGitHubActionsLogs(screenshotDeploy6);
+    popupPage.sensitiveStrings.push({searchString: 'cephalin', replacement: 'somebody'});
+    popupPage.sensitiveStrings.push({searchString: 'lcephas', replacement: '&lt;github-alias&gt;'});
     await popupPage.waitForActionRun({screenshotName: screenshotDeploy7});
     await popupPage.page.close();
 

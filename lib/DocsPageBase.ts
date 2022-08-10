@@ -10,6 +10,7 @@ import sharp from 'sharp';
  export class DocsPageBase {
     page: Page;
     screenshotDir: string;
+    sensitiveStrings: {searchString: string, replacement: string}[];
 
     constructor(page: Page, testInfo?: TestInfo ){
         this.page = page;
@@ -18,6 +19,7 @@ import sharp from 'sharp';
         } else {
             this.screenshotDir = '';
         }
+        this.sensitiveStrings = [];
     }
 
     /**
@@ -47,6 +49,34 @@ import sharp from 'sharp';
 		options.pressenter = options.pressenter ? options.pressenter : false;
 
         await this.page.setViewportSize({ width: options.width, height: options.height });
+
+        // cleanse sensitive strings
+        for(const s of this.sensitiveStrings) {
+            await this.page.locator(`text=${s.searchString}`).evaluateAll((nodes, s) => {
+                for (const node of (nodes as HTMLElement[])) {
+                    node.innerHTML = node.innerHTML.replace(s.searchString, s.replacement);
+                }
+            }, s);
+            for (const f of this.page.frames()) {
+                await f.locator(`text=${s.searchString}`).evaluateAll((nodes, s) => {
+                    for (const node of (nodes as HTMLElement[])) {
+                        node.innerHTML = node.innerHTML.replace(s.searchString, s.replacement);
+                    }
+                }, s);    
+            }
+            await this.page.locator(`input[value="${s.searchString}"]`).evaluateAll((nodes, s) => {
+                for (const node of (nodes as HTMLElement[])) {
+                    node.innerHTML = node.innerHTML.replace(s.searchString, s.replacement);
+                }
+            }, s);
+            for (const f of this.page.frames()) {
+                await f.locator(`input[value="${s.searchString}"]`).evaluateAll((nodes, s) => {
+                    for (const node of (nodes as HTMLElement[])) {
+                        node.innerHTML = node.innerHTML.replace(s.searchString, s.replacement);
+                    }
+                }, s);
+            }
+        }
                 
         if(options.highlightobjects) {
             for (const obj of options.highlightobjects) {

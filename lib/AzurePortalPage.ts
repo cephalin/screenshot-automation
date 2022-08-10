@@ -1,4 +1,4 @@
-import { expect, Page, TestInfo } from "@playwright/test";
+import { expect, Locator, Page, TestInfo } from "@playwright/test";
 import { DocsPageBase } from "./DocsPageBase";
 
 /*****************************************************************************
@@ -54,12 +54,14 @@ export class AzurePortalPage extends DocsPageBase {
         // Proceed to app management page
         await this.clearNotification();
         await this.page.locator('.ext-hubs-deploymentdetails-main-left div[role="button"]:has-text("Go to resource")').click();
+        await this.page.waitForLoadState();
     }
 
-    async searchAndGo(type: SearchType, searchString: string, options?: {itemText?: string | undefined, resourceType?: string | undefined, screenshotName?: string | undefined} | undefined): Promise<void> {
+    async searchAndGo(type: SearchType, searchString: string, options?: {itemText?: string | undefined, resourceType?: string | undefined, screenshotName?: string | undefined, clean?: boolean, dontGo?: boolean, otherHighlights?: Locator[]} | undefined): Promise<void> {
         
 		options = options ? options : {};
 		options.itemText = options.itemText ? options.itemText : searchString;
+        options.clean = options.clean === undefined ? true : false; // default to true
 
         var typeSelector = '';
         switch (type) {
@@ -86,7 +88,9 @@ export class AzurePortalPage extends DocsPageBase {
         }
 
         // Use default Azure portal page as clean background
-        await this.page.locator('.fxs-topbar-home[href="#home"]').click();
+        if(options.clean) {
+            await this.page.locator('.fxs-topbar-home[href="#home"]').click();
+        }
         
         var searchBoxSelector = '.fxs-search.fxs-topbar-search input';
         // somehow we need the select the .fxs-menu-result-details element or else the border gets cut off.
@@ -100,20 +104,32 @@ export class AzurePortalPage extends DocsPageBase {
         await this.page.locator(searchedItemSelector).waitFor();
 
         // DEBUG: should not blur as it removes the search dialog
+        let highlighted = [
+            this.page.locator('.fxs-search'),
+            this.page.locator(searchedItemSelector)
+        ];
+        if(options.otherHighlights) {
+            highlighted = highlighted.concat(options.otherHighlights);
+        }
         if(options.screenshotName) {
             await this.screenshot({
 				width: 780, 
 				height: 400, 
-				highlightobjects: [
-					this.page.locator('.fxs-search'),
-					this.page.locator(searchedItemSelector)
-				], 
+				highlightobjects: highlighted, 
                 blurAll: false,
 				name: options.screenshotName
 			});
         }
     
-        await this.page.locator(searchedItemSelector).click();
+        if(options?.dontGo) {
+            let width = this.page.viewportSize()?.width;
+            if(width) {
+                await this.page.mouse.click( width / 2, 0);
+            }
+        } else {
+            await this.page.locator(searchedItemSelector).click();
+            await this.page.waitForTimeout(3000);
+        }
     }
 
     async signin (): Promise<void> {

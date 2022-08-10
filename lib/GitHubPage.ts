@@ -203,6 +203,9 @@ import { DocsPageBase } from "./DocsPageBase";
         await this.page.locator('[aria-label="Find"]').press('Enter');
         await this.page.locator('[aria-label="Find"]').press('Enter');
         await this.page.locator('[aria-label="Find"]').press('Enter');
+        await this.page.locator('[aria-label="Find"]').press('Enter');
+        await this.page.locator('[aria-label="Find"]').press('Enter');
+        await this.page.locator('[aria-label="Find"]').press('Enter');
 
         await this.page.locator('[aria-label="Find"]').press('Alt+Enter');
         await this.page.locator('[aria-label="Close \\(Escape\\)"]').click();
