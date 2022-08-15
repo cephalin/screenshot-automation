@@ -38,12 +38,14 @@ export class AzurePortalPage extends DocsPageBase {
 
         // Make sure the button shows up.
         await this.page.locator('div[role="button"]:has-text("Go to resource")').first().click({trial: true});
+        await this.clearNotification();
 
         // DEBUG: nothing to blur
         if(screenshotName){
             await this.screenshot({
-                locator: this.page.locator('.ext-hubs-deploymentdetails-main-left'),
-                height: 900, 
+                locator: this.page.locator('.ext-hubs-deploymentdetails-content'),
+                height: 500, 
+                width: 1050,
                 highlightobjects: [
 					this.page.locator('.ext-hubs-deploymentdetails-main-left .fxc-simplebutton', {has: this.page.locator('div[role="button"]:has-text("Go to resource")')})
 				], 
@@ -52,7 +54,6 @@ export class AzurePortalPage extends DocsPageBase {
         }
 
         // Proceed to app management page
-        await this.clearNotification();
         await this.page.locator('.ext-hubs-deploymentdetails-main-left div[role="button"]:has-text("Go to resource")').click();
         await this.page.waitForLoadState();
     }
@@ -100,7 +101,8 @@ export class AzurePortalPage extends DocsPageBase {
 			var searchedItemSelector = `.fxs-search.fxs-topbar-search ${typeSelector} .fxs-menu-result-details:has(.fxs-menu-result-name:text-is("${options.itemText}"))`;
 		}
         await this.page.locator(searchBoxSelector).click();
-        await this.page.locator(searchBoxSelector).type(searchString);
+        await this.page.locator(searchBoxSelector).type(searchString, {delay: 50});
+        //await this.page.waitForTimeout(1000);
         await this.page.locator(searchedItemSelector).waitFor();
 
         // DEBUG: should not blur as it removes the search dialog
