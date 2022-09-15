@@ -79,9 +79,12 @@ import { DocsPageBase } from "./DocsPageBase";
         if(!this.rootUrl) {
             throw new Error ('Expected rootUrl to be set');
         }
-        this.page.goto(this.rootUrl);
+        await this.page.goto(this.rootUrl);
 
-        if(options?.screenshotAfter){
+        await this.page.locator('ul.nav.navbar-nav.navbar-right li.dropdown a[href="#"]')
+                    .evaluate( el => (el as HTMLElement).innerText = 'user@example.com');
+
+        if(options?.screenshotBefore){
             // DEBUG: no need to blur
             await this.screenshot({
                 highlightobjects: [
@@ -92,13 +95,14 @@ import { DocsPageBase } from "./DocsPageBase";
             });
         }
 
-        this.page.locator('a[href="api/deployments"]').click();
+        await this.page.locator('a[href="api/deployments"]').click();
+        await this.page.waitForLoadState();
 
         if(options?.screenshotAfter){
             // DEBUG: no need to blur
             await this.screenshot({
                 height: 600, 
-                name: options?.screenshotBefore
+                name: options?.screenshotAfter
             });
         }
 
@@ -112,7 +116,10 @@ import { DocsPageBase } from "./DocsPageBase";
         if(!this.rootUrl) {
             throw new Error ('Expected rootUrl to be set');
         }
-        this.page.goto(this.rootUrl);
+        await this.page.goto(this.rootUrl);
+
+        await this.page.locator('ul.nav.navbar-nav.navbar-right li.dropdown a[href="#"]')
+                .evaluate( el => (el as HTMLElement).innerText = 'user@example.com' );
 
         if(options?.screenshotBefore){
             // DEBUG: no need to blur
@@ -125,7 +132,8 @@ import { DocsPageBase } from "./DocsPageBase";
             });
         }
 
-        this.page.locator('a[href="wwwroot"]').click();
+        await this.page.locator('a[href="wwwroot"]').click();
+        await this.page.waitForLoadState();
 
         if(options?.screenshotAfter){
             // DEBUG: no need to blur

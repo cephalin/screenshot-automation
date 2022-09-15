@@ -28,7 +28,10 @@ declare module './AzurePortalPage' {
             region: string,
             appName: string,
             stack: string, 
-            screenshotName?: string
+            options?: {
+                screenshotName?: string
+                sku?: "Basic" | "Standard"
+            }
         ): Promise<void>;
 
         goToAppServicePageByMenu (
@@ -275,8 +278,11 @@ AzurePortalPage.prototype.runAppDbCreateWizard = async function(
     resourceGroupName: string, 
     region: string, 
     appName: string, 
-    stack: string, 
-    screenshotName?: string | undefined
+    stack: string,
+    options?: {
+        screenshotName?: string
+        sku?: "Basic" | "Standard"
+    }
 ): Promise<void> {
 
     await this.page.locator('[aria-label="Subscription selector"]').click();
@@ -292,9 +298,12 @@ AzurePortalPage.prototype.runAppDbCreateWizard = async function(
     await this.page.locator('[placeholder="Web App name\\."]').fill(appName);
     await this.page.locator('text=Select a runtime stack').click();
     await this.page.locator(`div[role="treeitem"]:has(:text-is("${stack}"))`).click();
+    if(options?.sku == "Basic") {
+        await this.page.locator(`ul[aria-label="Web Database hosting plan"] input[value="basic"] + .azc-radio-circle`).click();
+    }
     await expect(this.page.locator('.fxc-validation')).toHaveCount(0, {timeout: 10000}); // wait for validation warnings to disappear
 
-    if(screenshotName){
+    if(options?.screenshotName){
         var highlighted = [
             this.page.locator('.azc-formElementContainer', {has: this.page.locator('[aria-label="Subscription selector"]')}),
             this.page.locator('.azc-formElementContainer', {has: this.page.locator('[aria-label="Create new or use existing Resource group selector"]')}),
@@ -304,6 +313,9 @@ AzurePortalPage.prototype.runAppDbCreateWizard = async function(
             this.page.locator('.azc-formElementContainer', {has: this.page.locator('[aria-label="Location selector"]')}),
             this.page.locator('[aria-label="Review and create"]')
         ];
+        if(options?.sku == "Basic") {
+            highlighted.push(this.page.locator(`ul[aria-label="Web Database hosting plan"] input[value="basic"] + .azc-radio-circle`));
+        }
 
         // DEBUG: manually blur
         // await this.page.locator('.fxs-blade-title-titleText').last().click();
@@ -311,9 +323,9 @@ AzurePortalPage.prototype.runAppDbCreateWizard = async function(
 
         await this.screenshot({
             locator: this.page.locator('.fxs-journey-layout'),
-            height: 900,
+            height: 1100,
             highlightobjects: highlighted, 
-            name: screenshotName
+            name: options.screenshotName
         });
     }
 
@@ -466,6 +478,9 @@ AzurePortalPage.prototype.openAppServiceKudu = async function (options?: {
 
     let temp = new AppServiceScmPage(popup);
     temp.screenshotDir = this.screenshotDir; // TODO: not pretty. should fix
+    await temp.page.waitForLoadState();
+    await expect(temp.page.url()).toMatch(/https:\/\/.*\.scm\.azurewebsites\.net/);
+    temp.rootUrl = temp.page.url();
     return temp;
 }
 

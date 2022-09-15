@@ -4,7 +4,9 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "debug": "npx playwright test --headed --timeout=0"
+    "debug": "npx playwright test --headed --timeout=0",
+    "testscript": "node scripts/debugscript.js",
+    "compare": "node scripts/compare.js"
   },
   "keywords": [],
   "author": "",
@@ -15,9 +17,12 @@
   },
   "dependencies": {
     "@types/sharp": "^0.30.4",
+    "await-spawn": "^4.0.2",
     "cheerio": "^1.0.0-rc.12",
+    "del": "^6.0.0",
     "dir-compare": "^4.0.0",
     "dotenv": "^16.0.1",
-    "jimp": "^0.16.0"
+    "jimp": "^0.16.0",
+    "open": "^8.4.0"
   }
 }

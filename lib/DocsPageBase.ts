@@ -126,9 +126,10 @@ import sharp from 'sharp';
         } else {
             await root.screenshot({path: pathandname + '.png'});
         }
-        
-        await sharp(pathandname + '.png')
-              .resize({width: 240})
-              .toFile(pathandname + '-240px.png');
+
+        // Seems lightbox widget doesn't need this
+        // await sharp(pathandname + '.png')
+        //       .resize({width: 240})
+        //       .toFile(pathandname + '-240px.png');
     }
 }
