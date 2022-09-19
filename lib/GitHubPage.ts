@@ -1,5 +1,6 @@
 import { expect, Locator, Page, TestInfo } from "@playwright/test";
 import { DocsPageBase } from "./DocsPageBase";
+import fs from "fs";
 
 /*****************************************************************************
  * GitHubPage class
@@ -16,6 +17,11 @@ import { DocsPageBase } from "./DocsPageBase";
     }
 
     async signin (): Promise<void> {
+
+        if (fs.existsSync("auth.json")) {
+            await this.page.goto('https://github.com');
+            return;
+        }
 
         if(!process.env.GITHUB_USER || !process.env.GITHUB_PASSWORD){
             throw new Error('Please specify the following environment variables: GITHUB_USER, GITHUB_PASSWORD.');

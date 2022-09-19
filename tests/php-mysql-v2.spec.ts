@@ -32,7 +32,7 @@ var screenshotLogs1 = "azure-portal-stream-diagnostic-logs-1";
 var screenshotLogs2 = "azure-portal-stream-diagnostic-logs-2";
 var screenshotClean = "azure-portal-clean-up-resources";
 
-test.use({ viewport: { width: 780, height: 900 } });
+test.use({ viewport: { width: 780, height: 900 }, storageState: "auth.json" });
 
 test('tutorial-php-mysql-app', async ({ azPage, githubPage }) => {
 

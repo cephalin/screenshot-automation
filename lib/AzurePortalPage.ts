@@ -141,7 +141,7 @@ export class AzurePortalPage extends DocsPageBase {
         if (fs.existsSync("auth.json")) {
             await this.page.goto(this.baseUrl);
             await this.page.waitForNavigation();
-            if(process.env.AZURE_USER && !process.env.AZURE_USER.includes('@microsoft.com')) {
+            if(process.env.FREE_ACCOUNT && process.env.FREE_ACCOUNT == 'true') {
                 await this.clearNotification(); // get rid of the default notification
             }
             return;
