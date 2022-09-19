@@ -286,12 +286,14 @@ AzurePortalPage.prototype.runAppDbCreateWizard = async function(
 ): Promise<void> {
 
     await this.page.locator('[aria-label="Subscription selector"]').click();
-    await this.page.locator('div[role="treeitem"]:has-text("Visual Studio Enterprise Subscription")').click();
+    await this.page.locator('.azc-formElementContainer:has([aria-label="Subscription selector"]) input').type(subscription);
+    await this.page.locator(`div[role="treeitem"]:has-text("${subscription}")`).click();
     await this.page.locator('text=Create new').click();
     await this.page.locator('[placeholder="Create new"]').click();
     await this.page.locator('[placeholder="Create new"]').fill(resourceGroupName);
     await this.page.locator('div[role="button"]:has-text("OK")').click();
     await this.page.locator('[aria-label="Location selector"]').click();
+    await this.page.locator('.azc-formElementContainer:has([aria-label="Location selector"]) input').type(region);
     await this.page.locator(`div[role="treeitem"]:has(:text-is("${region}"))`).waitFor({state: 'visible', timeout: 10000});
     await this.page.locator(`div[role="treeitem"]:has(:text-is("${region}"))`).click();
     await this.page.locator('[placeholder="Web App name\\."]').click();

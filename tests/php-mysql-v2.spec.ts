@@ -1,9 +1,8 @@
-import { test} from '@playwright/test';
+import { test } from '../lib/docsFixtures';
 import '../lib/appServiceLibrary';
 import { MenuOptions } from '../lib/appServiceLibrary';
-import { AzurePortalPage, SearchType } from '../lib/AzurePortalPage';
+import { SearchType } from '../lib/AzurePortalPage';
 import { DocsPageBase } from '../lib/DocsPageBase';
-import { GitHubPage } from '../lib/GitHubPage';
 
 var appName = "msdocs-laravel-mysql-234";
 var resourceGroupName = "msdocs-laravel-mysql-tutorial";
@@ -32,18 +31,10 @@ var screenshotBrowse2 = "azure-portal-browse-app-2";
 var screenshotLogs1 = "azure-portal-stream-diagnostic-logs-1";
 var screenshotLogs2 = "azure-portal-stream-diagnostic-logs-2";
 var screenshotClean = "azure-portal-clean-up-resources";
-var screenshotClean1 = "azure-portal-clean-up-resources-1";
-var screenshotClean2 = "azure-portal-clean-up-resources-2";
-var screenshotClean3 = "azure-portal-clean-up-resources-3";
 
 test.use({ viewport: { width: 780, height: 900 } });
 
-test('tutorial-php-mysql-app', async ({ context }, testInfo) => {
-
-    const azPage = new AzurePortalPage(await context.newPage(), testInfo);
-    await azPage.signin();
-    const githubPage = new GitHubPage(await context.newPage(), {testInfo: testInfo});
-    await githubPage.signin();
+test('tutorial-php-mysql-app', async ({ azPage, githubPage }) => {
 
     // add to sensitive text list
     azPage.sensitiveStrings.push({searchString: 'lcephas', replacement: '&lt;github-alias&gt;'});
@@ -52,7 +43,7 @@ test('tutorial-php-mysql-app', async ({ context }, testInfo) => {
 
     // Create App+DB
     await azPage.searchAndGo(SearchType.marketplace, "web app database", { itemText: "Web App + Database", screenshotName: screenshotCreate1});
-    await azPage.runAppDbCreateWizard('Visual Studio Enterprise Subscription', resourceGroupName, region, appName, runtime, screenshotCreate2);
+    await azPage.runAppDbCreateWizard('Antares-Demo', resourceGroupName, region, appName, runtime, {sku: "Basic", screenshotName: screenshotCreate2});
     await azPage.goToCreatedResource(screenshotCreate3);
 
     // Connection string
@@ -74,8 +65,7 @@ test('tutorial-php-mysql-app', async ({ context }, testInfo) => {
 
     // Deploy
     await githubPage.createFork('https://github.com/Azure-Samples/laravel-tasks', screenshotDeploy1);
-    await githubPage.page.goto('https://github.com/lcephas/laravel-tasks');
-    githubPage.repoUrl = 'https://github.com/lcephas/laravel-tasks';
+    await githubPage.page.waitForLoadState();
     await githubPage.openVSCode({screenshotName: screenshotDeploy2});
     await githubPage.viewFileInVSC({
         filepath: 'config/database.php', 
@@ -83,7 +73,6 @@ test('tutorial-php-mysql-app', async ({ context }, testInfo) => {
         screenshotName: screenshotDeploy3
     });
 
-    //await azPage.searchAndGo(SearchType.resources, appName, {resourceType: 'App Service'});
     await azPage.goToAppServicePageByMenu(MenuOptions.deploymentcenter, screenshotDeploy4);
     if(process.env.GITHUB_USER) {
         await azPage.configureGitHubActionsDeploy(process.env.GITHUB_USER, 'laravel-tasks', 'main', screenshotDeploy5);
@@ -127,12 +116,11 @@ test('tutorial-php-mysql-app', async ({ context }, testInfo) => {
     });
     await azPage.saveAppServiceConfigurationPage();
 
+    // Stream logs part 1
+    await azPage.enableAppServiceLinuxLogs(screenshotLogs1);
+
     // Browse to web app
     const [browse] = await azPage.browseAppServiceUrl(screenshotBrowse1);
-    // while((await (browse as Page).locator('h1').innerText()).search('404')) {
-    //     await browse.waitForTimeout(5000);
-    //     await browse.goto(`https://${appName}.azurewebsites.net`);
-    // }
     await browse.setViewportSize({ width: 780, height: 600 });
     await browse.locator('input#task-name').fill('Create app and database in Azure');
     await browse.locator('button:has-text("Add Task")').click();
@@ -143,9 +131,17 @@ test('tutorial-php-mysql-app', async ({ context }, testInfo) => {
     await DocsPageBase.screenshotBigSmall (browse, azPage.screenshotDir, screenshotBrowse2);
     await browse.close();
 
-    // Stream logs
-    await azPage.enableAppServiceLinuxLogs(screenshotLogs1);
-    await azPage.streamAppServiceLogs(screenshotLogs2);
+    // // debug
+    // await azPage.searchAndGo(SearchType.resources, appName, {resourceType: 'App Service'});
+
+    // Stream logs part 2
+    await azPage.streamAppServiceLogs({
+        searchStrings: [
+            'INFO: get /',
+            'INFO: post /task'
+        ], 
+        screenshotName: screenshotLogs2
+    });
 
     // Delete resources
     await azPage.deleteResourceGroup(resourceGroupName, screenshotClean);

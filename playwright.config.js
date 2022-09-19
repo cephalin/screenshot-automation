@@ -37,6 +37,7 @@ const config = {
   use: {
     /* Maximum time each action such as `click()` can take. Defaults to 0 (no limit). */
     actionTimeout: 0,
+    storageState: "auth.json",
     // launchOptions: {
     //   slowMo: 70
     // },

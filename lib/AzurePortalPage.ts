@@ -1,6 +1,6 @@
 import { expect, Locator, Page, TestInfo } from "@playwright/test";
 import { DocsPageBase } from "./DocsPageBase";
-
+import fs from "fs";
 /*****************************************************************************
  * SearchType - search result categories in the Azure search box
  *****************************************************************************/
@@ -136,6 +136,17 @@ export class AzurePortalPage extends DocsPageBase {
 
     async signin (): Promise<void> {
 
+        // Use stored authentication session if saved.
+        // Run "npx playwright codegen --save-storage=auth.json" to generate auth.json
+        if (fs.existsSync("auth.json")) {
+            await this.page.goto(this.baseUrl);
+            await this.page.waitForNavigation();
+            if(process.env.AZURE_USER && !process.env.AZURE_USER.includes('@microsoft.com')) {
+                await this.clearNotification(); // get rid of the default notification
+            }
+            return;
+        }
+          
         if(!process.env.AZURE_HOME || !process.env.AZURE_USER || !process.env.AZURE_PASSWORD){
             throw new Error('Please specify the following environment variables: AZURE_USER, AZURE_PASSWORD.');
         }
