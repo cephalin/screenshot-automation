@@ -6,7 +6,7 @@ import fs from "fs";
  * GitHubPage class
  * - Collects common tasks on the GitHub site
  *****************************************************************************/
- export class GitHubPage extends DocsPageBase {
+ export class GitHubPageChinese extends DocsPageBase {
     repoUrl: string;
 
     constructor(page: Page, options?: {testInfo?: TestInfo, repoUrl?: string}){
@@ -200,22 +200,22 @@ import fs from "fs";
 
         await this.page.locator('html').press('Control+f'); //(Window/Linux is Control+f)
         if(options?.searchString){
-            await this.page.locator('[aria-label="Find"]').fill(options.searchString);
+            await this.page.locator('[aria-label="查找"]').fill(options.searchString);
         } else if(options?.regex){
-            await this.page.locator('[aria-label="Find"]').press('Alt+r');
-            await this.page.locator('[aria-label="Find"]').fill(options.regex);
+            await this.page.locator('[aria-label="查找"]').press('Alt+r');
+            await this.page.locator('[aria-label="查找"]').fill(options.regex);
         }
         // DEBUG: cycle through a few matches to get them in view
-        await this.page.locator('[aria-label="Find"]').press('Enter');
-        await this.page.locator('[aria-label="Find"]').press('Enter');
-        await this.page.locator('[aria-label="Find"]').press('Enter');
-        await this.page.locator('[aria-label="Find"]').press('Enter');
-        await this.page.locator('[aria-label="Find"]').press('Enter');
-        await this.page.locator('[aria-label="Find"]').press('Enter');
-        await this.page.locator('[aria-label="Find"]').press('Enter');
+        await this.page.locator('[aria-label="查找"]').press('Enter');
+        await this.page.locator('[aria-label="查找"]').press('Enter');
+        await this.page.locator('[aria-label="查找"]').press('Enter');
+        await this.page.locator('[aria-label="查找"]').press('Enter');
+        await this.page.locator('[aria-label="查找"]').press('Enter');
+        await this.page.locator('[aria-label="查找"]').press('Enter');
+        await this.page.locator('[aria-label="查找"]').press('Enter');
 
-        await this.page.locator('[aria-label="Find"]').press('Alt+Enter');
-        await this.page.locator('[aria-label="Close \\(Escape\\)"]').click();
+        await this.page.locator('[aria-label="查找"]').press('Alt+Enter');
+        await this.page.locator('[aria-label="关闭 \\(Escape\\)"]').click();
 
         // DEBUG: nothing to blur
         if(options.screenshotName) {
@@ -239,9 +239,9 @@ import fs from "fs";
 
     async commitAllChangesInVSC(message: string, screenshotName?: string): Promise<void> {
 
-        await this.page.locator('[id="workbench\.parts\.activitybar"] .action-item[aria-label^="Source Control (Ctrl+Shift+G)"]').click();
-        await this.page.locator('[aria-label="Source Control Input"] .monaco-editor').click();
-        await this.page.locator('[aria-label="Source Control Input"] .monaco-editor').type(message);
+        await this.page.locator('[id="workbench\.parts\.activitybar"] .action-item[aria-label^="源代码管理 (Ctrl+Shift+G)"]').click();
+        await this.page.locator('[aria-label="源代码管理"] .monaco-editor').click();
+        await this.page.locator('[aria-label="源代码管理"] .monaco-editor').type(message);
         await this.page.locator('text=Don\'t show again').click();      
 
         // DEBUG: manually blur
@@ -252,8 +252,8 @@ import fs from "fs";
                 width: 1200,
 				height: 700, 
 				highlightobjects: [
-                    this.page.locator('[id="workbench\.parts\.activitybar"] .action-item[aria-label^="Source Control (Ctrl+Shift+G)"]'),
-                    this.page.locator('[aria-label="Source Control Input"] .monaco-editor'),
+                    this.page.locator('[id="workbench\.parts\.activitybar"] .action-item[aria-label^="原始檔控制 (Ctrl+Shift+G)"]'),
+                    this.page.locator('[aria-label="源代码管理"] .monaco-editor'),
                     this.page.locator('.composite.title [aria-label="Commit and Push"]')
                 ],
 				name: screenshotName

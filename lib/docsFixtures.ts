@@ -5,12 +5,16 @@
  *****************************************************************************/
 import { test as base } from '@playwright/test';
 import { AzurePortalPage } from './AzurePortalPage';
+import { AzurePortalPageChinese } from './AzurePortalPageChinese';
 import { GitHubPage } from './GitHubPage';
+import { GitHubPageChinese } from './GitHubPageChinese';
 
 // Declare the types of your fixtures.
 type MyFixtures = {
     azPage: AzurePortalPage;
+    azPageCn: AzurePortalPageChinese;
     githubPage: GitHubPage;
+    githubPageCn: GitHubPageChinese;
 };
 
 export const test = base.extend<MyFixtures>({
@@ -22,6 +26,14 @@ export const test = base.extend<MyFixtures>({
         // Use the fixture value in the test.
         await use(azPage);
     },
+    azPageCn: async ({ context }, use, testInfo) => {
+        // Set up the fixture.
+        const azPageCn = new AzurePortalPageChinese(await context.newPage(), testInfo);
+        await azPageCn.signin();
+    
+        // Use the fixture value in the test.
+        await use(azPageCn);
+    },
     githubPage: async ({ context }, use, testInfo) => {
         // Set up the fixture.
         const githubPage = new GitHubPage(await context.newPage(), {testInfo: testInfo});
@@ -29,6 +41,14 @@ export const test = base.extend<MyFixtures>({
 
         // Use the fixture value in the test.
         await use(githubPage);
+    },
+    githubPageCn: async ({ context }, use, testInfo) => {
+        // Set up the fixture.
+        const githubPageCn = new GitHubPageChinese(await context.newPage(), {testInfo: testInfo});
+        await githubPageCn.signin();
+
+        // Use the fixture value in the test.
+        await use(githubPageCn);
     },
 
 });

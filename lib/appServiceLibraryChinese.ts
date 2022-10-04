@@ -5,7 +5,7 @@
  *****************************************************************************/
 import { expect, Locator, Page } from '@playwright/test';
 import { AppServiceScmPage } from './AppServiceScmPage';
-import { AzurePortalPage } from './AzurePortalPage';
+import { AzurePortalPageChinese } from './AzurePortalPageChinese';
 import { GitHubPage } from './GitHubPage';
 
 // Common App Service menu selectors - not the full list
@@ -19,8 +19,8 @@ export enum MenuOptions {
     kudu = '[data-telemetryname="Menu-kudu"]'
 }
 
-declare module './AzurePortalPage' {
-    interface AzurePortalPage {
+declare module './AzurePortalPageChinese' {
+    interface AzurePortalPageChinese {
     
         runAppDbCreateWizard (
             subscription: string,
@@ -110,7 +110,7 @@ declare module './AzurePortalPage' {
     }    
 }
 
-AzurePortalPage.prototype.newAppServiceSettingNoSave = async function (
+AzurePortalPageChinese.prototype.newAppServiceSettingNoSave = async function (
     name: string,
     value: string,
     screenshotName?: string
@@ -122,7 +122,7 @@ AzurePortalPage.prototype.newAppServiceSettingNoSave = async function (
 
     var configurationFrame = this.page.frameLocator('[data-extensionname="WebsitesExtension"] iframe'); // CN
 
-    await configurationFrame.locator('button[name="New application setting"]').click();
+    await configurationFrame.locator('button[name="新应用程序设置"]').click();
     await configurationFrame.locator('input#app-settings-edit-name').fill(name);
     await configurationFrame.locator('input#app-settings-edit-value').fill(value);
   
@@ -134,7 +134,7 @@ AzurePortalPage.prototype.newAppServiceSettingNoSave = async function (
             locator: this.page.locator('.fxs-blade-firstblade .fxs-blade-content-container-details'),
             height: 500, 
             highlightobjects: [
-                configurationFrame.locator('button[name="New application setting"]'),
+                configurationFrame.locator('button[name="新应用程序设置"]'),
                 configurationFrame.locator('.ms-TextField', {has: this.page.locator('input#app-settings-edit-name')}),
                 configurationFrame.locator('.ms-TextField', {has: this.page.locator('input#app-settings-edit-value')}),
                 configurationFrame.locator('button#app-settings-edit-footer-save')
@@ -146,7 +146,7 @@ AzurePortalPage.prototype.newAppServiceSettingNoSave = async function (
     await configurationFrame.locator('button#app-settings-edit-footer-save').click();
 }
 
-AzurePortalPage.prototype.getAppServiceSetting = async function (
+AzurePortalPageChinese.prototype.getAppServiceSetting = async function (
     name: string,
     screenshotName?: string
 ): Promise<string> {
@@ -155,7 +155,7 @@ AzurePortalPage.prototype.getAppServiceSetting = async function (
 
 const appServiceUrlRegEx = `\/resource\/subscriptions\/[{]?[0-9a-fA-F]{8}-([0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}[}]?\/resourcegroups\/[\\w-]*\/providers\/Microsoft.Web\/sites\/[\\w-]*`;
 
-AzurePortalPage.prototype.viewAppServiceAppSettings = async function (
+AzurePortalPageChinese.prototype.viewAppServiceAppSettings = async function (
     screenshotName?: string
 ): Promise<void> {
     await this.page.waitForTimeout(5000);
@@ -181,7 +181,7 @@ AzurePortalPage.prototype.viewAppServiceAppSettings = async function (
 
 }
 
-AzurePortalPage.prototype.newAppServiceConnectionStringNoSave = async function (
+AzurePortalPageChinese.prototype.newAppServiceConnectionStringNoSave = async function (
     name: string,
     value: string,
     type: string,
@@ -190,7 +190,7 @@ AzurePortalPage.prototype.newAppServiceConnectionStringNoSave = async function (
 
 }
 
-AzurePortalPage.prototype.getAppServiceConnectionString = async function(
+AzurePortalPageChinese.prototype.getAppServiceConnectionString = async function(
     name: string,
     screenshotName?: string
 ): Promise<{value: string, type: string}> {
@@ -222,12 +222,12 @@ AzurePortalPage.prototype.getAppServiceConnectionString = async function(
 }
 
 
-AzurePortalPage.prototype.goToAppServicePageByMenu = async function(
+AzurePortalPageChinese.prototype.goToAppServicePageByMenu = async function(
     option: MenuOptions,
     screenshotName?: string
 ): Promise<void> {
     
-    await expect(this.page).toHaveURL(new RegExp(appServiceUrlRegEx, 'i'), {timeout: 10000});
+    await expect(this.page).toHaveURL(new RegExp(appServiceUrlRegEx, 'i'), {timeout: 10000}); // CN
 
     var menuItem = this.page.locator(option);
     await expect (menuItem).toBeEnabled({timeout: 10000});
@@ -246,7 +246,7 @@ AzurePortalPage.prototype.goToAppServicePageByMenu = async function(
     await menuItem.click();
 }
 
-AzurePortalPage.prototype.saveAppServiceConfigurationPage = async function (
+AzurePortalPageChinese.prototype.saveAppServiceConfigurationPage = async function (
     screenshotName?: string
 ): Promise<void> {
 
@@ -260,20 +260,20 @@ AzurePortalPage.prototype.saveAppServiceConfigurationPage = async function (
             locator: this.page.locator('.fxs-blade-firstblade .fxs-blade-content-container-details'),
             height: 700, 
             highlightobjects: [
-                configurationFrame.locator('button[data-cy="command-button-Save"]')
+                configurationFrame.locator('button[data-cy="command-button-保存"]')
             ], 
             name: screenshotName
         });    
     }
 
-    await configurationFrame.locator('button[data-cy="command-button-Save"]').click();
-    await configurationFrame.locator('button', {has: this.page.locator('text=Continue')}).click();
+    await configurationFrame.locator('button[data-cy="command-button-保存"]').click();
+    await configurationFrame.locator('button', {has: this.page.locator('text=继续')}).click();
 
     await this.clearNotification();
-    await this.clearNotification("Successfully updated web app settings");
+    await this.clearNotification("已成功更新 Web 应用设置");
 }
 
-AzurePortalPage.prototype.runAppDbCreateWizard = async function(
+AzurePortalPageChinese.prototype.runAppDbCreateWizard = async function(
     subscription: string, 
     resourceGroupName: string, 
     region: string, 
@@ -285,37 +285,37 @@ AzurePortalPage.prototype.runAppDbCreateWizard = async function(
     }
 ): Promise<void> {
 
-    await this.page.locator('[aria-label="Subscription selector"]').click();
-    await this.page.locator('.azc-formElementContainer:has([aria-label="Subscription selector"]) input').type(subscription);
+    await this.page.locator('[aria-label="订阅选择器"]').click();
+    await this.page.locator('.azc-formElementContainer:has([aria-label="订阅选择器"]) input').type(subscription);
     await this.page.locator(`div[role="treeitem"]:has-text("${subscription}")`).click();
-    await this.page.locator('text=Create new').click();
-    await this.page.locator('[placeholder="Create new"]').click();
-    await this.page.locator('[placeholder="Create new"]').fill(resourceGroupName);
-    await this.page.locator('div[role="button"]:has-text("OK")').click();
-    await this.page.locator('[aria-label="Location selector"]').click();
-    await this.page.locator('.azc-formElementContainer:has([aria-label="Location selector"]) input').type(region);
+    await this.page.locator('text=新建').click();
+    await this.page.locator('[placeholder="新建"]').click();
+    await this.page.locator('[placeholder="新建"]').fill(resourceGroupName);
+    await this.page.locator('div[role="button"]:has-text("确定")').click();
+    await this.page.locator('[aria-label="位置选择器"]').click();
+    await this.page.locator('.azc-formElementContainer:has([aria-label="位置选择器"]) input').type(region);
     await this.page.locator(`div[role="treeitem"]:has(:text-is("${region}"))`).waitFor({state: 'visible', timeout: 10000});
     await this.page.locator(`div[role="treeitem"]:has(:text-is("${region}"))`).click();
-    await this.page.locator('[placeholder="Web App name\\."]').click();
-    await this.page.locator('[placeholder="Web App name\\."]').fill(appName);
-    await this.page.locator('text=Select a runtime stack').click();
+    await this.page.locator('[placeholder="Web 应用名称。"]').click();
+    await this.page.locator('[placeholder="Web 应用名称。"]').fill(appName);
+    await this.page.locator('text=选择运行时堆栈').click();
     await this.page.locator(`div[role="treeitem"]:has(:text-is("${stack}"))`).click();
     if(options?.sku == "Basic") {
-        await this.page.locator(`ul[aria-label="Web Database hosting plan"] input[value="basic"] + .azc-radio-circle`).click();
+        await this.page.locator(`ul[aria-label="Web 数据库托管计划"] input[value="basic"] + .azc-radio-circle`).click();
     }
     await expect(this.page.locator('.fxc-validation')).toHaveCount(0, {timeout: 10000}); // wait for validation warnings to disappear
 
     if(options?.screenshotName){
         var highlighted = [
-            this.page.locator('.azc-formElementContainer', {has: this.page.locator('[aria-label="Subscription selector"]')}),
-            this.page.locator('.azc-formElementContainer', {has: this.page.locator('[aria-label="Create new or use existing Resource group selector"]')}),
-            this.page.locator('.azc-formElementContainer', {has: this.page.locator('[aria-label="Location selector"]')}),
-            this.page.locator('.azc-formElementContainer', {has: this.page.locator('[aria-label="Web App name"]')}),
-            this.page.locator('.azc-formElementContainer', {has: this.page.locator('[aria-label="Runtime stack selector"]')}),
-            this.page.locator('[aria-label="Review and create"]')
+            this.page.locator('.azc-formElementContainer', {has: this.page.locator('[aria-label="订阅选择器"]')}),
+            this.page.locator('.azc-formElementContainer', {has: this.page.locator('[aria-label="创建新的或使用现有的“资源组选择器”"]')}),
+            this.page.locator('.azc-formElementContainer', {has: this.page.locator('[aria-label="位置选择器"]')}),
+            this.page.locator('.azc-formElementContainer', {has: this.page.locator('[aria-label="Web 应用名称"]')}),
+            this.page.locator('.azc-formElementContainer', {has: this.page.locator('[aria-label="运行时堆栈选择器"]')}),
+            this.page.locator('[aria-label="审阅并创建"]')
         ];
         if(options?.sku == "Basic") {
-            highlighted.push(this.page.locator(`ul[aria-label="Web Database hosting plan"] input[value="basic"] + .azc-radio-circle`));
+            highlighted.push(this.page.locator(`ul[aria-label="Web 数据库托管计划"] input[value="basic"] + .azc-radio-circle`));
         }
 
         // DEBUG: manually blur
@@ -330,11 +330,11 @@ AzurePortalPage.prototype.runAppDbCreateWizard = async function(
         });
     }
 
-    await this.page.locator('[aria-label="Review and create"]').click();
-    await this.page.locator('[aria-label="Create"]').click();
+    await this.page.locator('[aria-label="审阅并创建"]').click();
+    await this.page.locator('[aria-label="创建"]').click();
 };
 
-AzurePortalPage.prototype.configureGitHubActionsDeploy = async function (
+AzurePortalPageChinese.prototype.configureGitHubActionsDeploy = async function (
     username: string,
     reponame: string,
     branch: string,
@@ -360,11 +360,11 @@ AzurePortalPage.prototype.configureGitHubActionsDeploy = async function (
         await this.screenshot({
             height: 1000, 
             highlightobjects: [
-                deploymentFrame.locator('[aria-label="Source"]'),
+                deploymentFrame.locator('[aria-label="源"]'),
                 deploymentFrame.locator('#deployment-center-settings-organization-option'),
                 deploymentFrame.locator('#deployment-center-settings-repository-option'),
                 deploymentFrame.locator('#deployment-center-settings-branch-option'),
-                deploymentFrame.locator('button[aria-label="Deployment center save command"]')
+                deploymentFrame.locator('button[aria-label="部署中心保存命令"]')
             ], 
             name: screenshotName
         });    
@@ -377,20 +377,20 @@ AzurePortalPage.prototype.configureGitHubActionsDeploy = async function (
     await deploymentFrame.locator('#deployment-center-settings-branch-option button').click();
     await deploymentFrame.locator(`button[role="option"]:has-text("${branch}")`).click();
   
-    await deploymentFrame.locator('button[aria-label="Deployment center save command"]').click();
-    await this.clearNotification("Successfully setup GitHub Action build and deployment pipeline.");  
+    await deploymentFrame.locator('button[aria-label="部署中心保存命令"]').click();
+    await this.clearNotification("已成功设置 GitHub 操作生成和部署管道。");  
 }
 
-AzurePortalPage.prototype.goToGitHubActionsLogs = async function (
+AzurePortalPageChinese.prototype.goToGitHubActionsLogs = async function (
     screenshotName?: string
 ): Promise<GitHubPage> {
 
     var deploymentFrame = await this.page.frameLocator('[data-extensionname="WebsitesExtension"] iframe'); 
 
-    await deploymentFrame.locator('[aria-label="Deployment center logs"]').click();
+    await deploymentFrame.locator('[aria-label="部署中心日志"]').click();
     await this.page.waitForTimeout(10000);
-    await deploymentFrame.locator('[aria-label="Deployment center refresh command"]').click();
-    await deploymentFrame.locator('button:has-text("Build/Deploy Logs")').first().click({trial: true});
+    await deploymentFrame.locator('[aria-label="部署中心刷新命令"]').click();
+    await deploymentFrame.locator('button:has-text("生成/部署日志")').first().click({trial: true});
   
     if(screenshotName){
 
@@ -398,8 +398,8 @@ AzurePortalPage.prototype.goToGitHubActionsLogs = async function (
         await this.screenshot({
             height: 500, 
             highlightobjects: [
-                deploymentFrame.locator('button:has-text("Build/Deploy Logs")').first(),
-                deploymentFrame.locator('[aria-label="Deployment center logs"]')
+                deploymentFrame.locator('button:has-text("生成/部署日志")').first(),
+                deploymentFrame.locator('[aria-label="部署中心日志"]')
             ], 
             name: screenshotName
         });    
@@ -408,7 +408,7 @@ AzurePortalPage.prototype.goToGitHubActionsLogs = async function (
     // Go to GitHub now. The button opens a new tab so we need to follow that.
     const [popup] = await Promise.all([
         this.page.waitForEvent('popup'),
-        deploymentFrame.locator('button:has-text("Build/Deploy Logs")').first().click() // Opens a new tab
+        deploymentFrame.locator('button:has-text("生成/部署日志")').first().click() // Opens a new tab
     ])
   
     let temp = new GitHubPage(popup, {repoUrl: (popup as Page).url().replace(/\/actions\/runs\/[0-9]+/, '') });
@@ -416,7 +416,7 @@ AzurePortalPage.prototype.goToGitHubActionsLogs = async function (
     return temp;
 }
 
-AzurePortalPage.prototype.openSshShellToContainer = async function (options?: {
+AzurePortalPageChinese.prototype.openSshShellToContainer = async function (options?: {
     clickMenu?: boolean,
     screenshotName?: string
 }): Promise<AppServiceScmPage> {
@@ -449,7 +449,7 @@ AzurePortalPage.prototype.openSshShellToContainer = async function (options?: {
     return temp;
 }
 
-AzurePortalPage.prototype.openAppServiceKudu = async function (options?: {
+AzurePortalPageChinese.prototype.openAppServiceKudu = async function (options?: {
     clickMenu?: boolean,
     screenshotName?: string
 }): Promise<AppServiceScmPage> {
@@ -485,7 +485,7 @@ AzurePortalPage.prototype.openAppServiceKudu = async function (options?: {
     return temp;
 }
 
-AzurePortalPage.prototype.goToAppServiceConfigurationGeneralSettings = async function (
+AzurePortalPageChinese.prototype.goToAppServiceConfigurationGeneralSettings = async function (
     screenshotName?: string
 ): Promise<void> {
     
@@ -509,7 +509,7 @@ AzurePortalPage.prototype.goToAppServiceConfigurationGeneralSettings = async fun
     await configurationFrame.locator('button#app-settings-general-settings-tab').click();
 }
 
-AzurePortalPage.prototype.browseAppServiceUrl = async function (
+AzurePortalPageChinese.prototype.browseAppServiceUrl = async function (
     screenshotName?: string
 ): Promise<[any, any]> {
 
@@ -517,7 +517,7 @@ AzurePortalPage.prototype.browseAppServiceUrl = async function (
     await this.page.waitForTimeout(10000);
 
     // Remove sensitive information
-    await this.page.locator('.fxc-essentials-label-container:has-text("Subscription ID") ~ .fxc-essentials-value-wrapper .fxc-essentials-value.fxs-portal-text')
+    await this.page.locator('.fxc-essentials-label-container:has-text("订阅 ID") ~ .fxc-essentials-value-wrapper .fxc-essentials-value.fxs-portal-text')
             .evaluate(el => el.innerText = '00000000-0000-0000-0000-000000000000');
     await this.page.locator('.fxc-essentials-label-container:has-text("URL") ~ .fxc-essentials-value-wrapper').evaluateHandle(el => el.setAttribute("style", "border: 3px solid red !important;"));
   
@@ -539,13 +539,13 @@ AzurePortalPage.prototype.browseAppServiceUrl = async function (
     ]);
 }
 
-AzurePortalPage.prototype.enableAppServiceLinuxLogs = async function (
+AzurePortalPageChinese.prototype.enableAppServiceLinuxLogs = async function (
     screenshotName?: string
 ): Promise<void> {
 
     await this.goToAppServicePageByMenu(MenuOptions.logsnative);
 
-    await this.page.locator('.fxs-blade-content-container-details .azc-optionPicker-item:has-text("File System")').click();
+    await this.page.locator('.fxs-blade-content-container-details .azc-optionPicker-item:has-text("文件系统")').click();
 
     if(screenshotName){
         // DEBUG: no need to blur
@@ -553,20 +553,20 @@ AzurePortalPage.prototype.enableAppServiceLinuxLogs = async function (
             height: 500, 
             highlightobjects: [
                 this.page.locator(MenuOptions.logsnative),
-                this.page.locator('.fxs-blade-content-container-details .azc-optionPicker-item:has-text("File System")'),
-                this.page.locator(':has(> [aria-label="Save"])')
+                this.page.locator('.fxs-blade-content-container-details .azc-optionPicker-item:has-text("文件系统")'),
+                this.page.locator(':has(> [aria-label="保存"])')
             ], 
             name: screenshotName
         });
     }
   
-    await this.page.locator('[aria-label="Save"]').click();
+    await this.page.locator('[aria-label="保存"]').click();
     // get rid of notification window
     await this.clearNotification();
-    await this.clearNotification("Successfully updated App Service logs settings");  
+    await this.clearNotification("已成功更新应用服务日志设置");  
 }
 
-AzurePortalPage.prototype.streamAppServiceLogs = async function (options?: {
+AzurePortalPageChinese.prototype.streamAppServiceLogs = async function (options?: {
     searchStrings?: string[],
     screenshotName?: string
 }): Promise<void> {

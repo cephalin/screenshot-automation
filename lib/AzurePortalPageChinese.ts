@@ -17,7 +17,7 @@ import fs from "fs";
  * AzurePortalPage class
  * - Collects common tasks in the Azure portal
  *****************************************************************************/
-export class AzurePortalPage extends DocsPageBase {
+export class AzurePortalPageChinese extends DocsPageBase {
     baseUrl: string;
 
     constructor(page: Page, testInfo?: TestInfo){
@@ -37,7 +37,7 @@ export class AzurePortalPage extends DocsPageBase {
         }
 
         // Make sure the button shows up.
-        await this.page.locator('div[role="button"]:has-text("Go to resource")').first().click({trial: true});
+        await this.page.locator('div[role="button"]:has-text("转到资源")').first().click({trial: true});
         await this.clearNotification();
 
         // DEBUG: nothing to blur
@@ -47,14 +47,14 @@ export class AzurePortalPage extends DocsPageBase {
                 height: 500, 
                 width: 1050,
                 highlightobjects: [
-					this.page.locator('.ext-hubs-deploymentdetails-main-left .fxc-simplebutton', {has: this.page.locator('div[role="button"]:has-text("Go to resource")')})
+					this.page.locator('.ext-hubs-deploymentdetails-main-left .fxc-simplebutton', {has: this.page.locator('div[role="button"]:has-text("转到资源")')})
 				], 
                 name: screenshotName
             });
         }
 
         // Proceed to app management page
-        await this.page.locator('.ext-hubs-deploymentdetails-main-left div[role="button"]:has-text("Go to resource")').click();
+        await this.page.locator('.ext-hubs-deploymentdetails-main-left div[role="button"]:has-text("转到资源")').click();
         await this.page.waitForLoadState();
     }
 
@@ -67,19 +67,19 @@ export class AzurePortalPage extends DocsPageBase {
         var typeSelector = '';
         switch (type) {
             case SearchType.marketplace:
-                typeSelector = 'ul[aria-label="Marketplace"]';
+                typeSelector = 'ul[aria-label="市场"]';
                 break;
             case SearchType.services:
-                typeSelector = 'ul[aria-label="Services"]';
+                typeSelector = 'ul[aria-label="服务"]';
                 break;
             case SearchType.resources:
-                typeSelector = 'ul[aria-label="Resources"]';
+                typeSelector = 'ul[aria-label="资源"]';
                 break;
             case SearchType.resourceGroups:
-                typeSelector = 'ul[aria-label="Resource Groups"]';
+                typeSelector = 'ul[aria-label="资源组"]';
                 break;
             case SearchType.documentation:
-                typeSelector = 'ul[aria-label="Documentation"]';
+                typeSelector = 'ul[aria-label="文档"]';
                 break;
             case SearchType.aad:
                 typeSelector = 'ul[aria-label="Azure Active Directory"]';
@@ -169,10 +169,10 @@ export class AzurePortalPage extends DocsPageBase {
         }
 
         if (!message) {
-            await this.page.locator('[aria-label="Dismiss toast notification"]').click();
+            await this.page.locator('[aria-label="关闭 toast 通知"]').click();
         } else {
             await this.page.locator('.fxs-toast-item.fxs-popup:has-text("' + message + '")').waitFor();
-            await this.page.locator('[aria-label="Dismiss toast notification"]').click();    
+            await this.page.locator('[aria-label="关闭 toast 通知"]').click();    
         }
     }
 
@@ -189,7 +189,7 @@ export class AzurePortalPage extends DocsPageBase {
         await this.page.waitForTimeout(10000);
 
         // Remove sensitive information
-        await this.page.locator('.fxc-essentials-label-container:has-text("Subscription ID") ~ .fxc-essentials-value-wrapper .fxc-essentials-value.fxs-portal-text')
+        await this.page.locator('.fxc-essentials-label-container:has-text("订阅 ID") ~ .fxc-essentials-value-wrapper .fxc-essentials-value.fxs-portal-text')
                 .evaluate(el => (el as HTMLElement).innerText = '00000000-0000-0000-0000-000000000000');
     
         if (screenshotPrefix) {
@@ -199,37 +199,37 @@ export class AzurePortalPage extends DocsPageBase {
                 width: 780, 
                 height: 500, 
                 highlightobjects: [
-                    this.page.locator('li[title="Delete resource group"]')
+                    this.page.locator('li[title="删除资源组"]')
                 ], 
                 name: `${screenshotPrefix}-2`
             });    
         }
       
-        await this.page.locator('li[title="Delete resource group"]').click();
+        await this.page.locator('li[title="删除资源组"]').click();
 
 
         // Step 3
-        await this.page.locator('[aria-label="Type the resource group name:"]').fill(name);
-        await this.page.locator('.fxs-button[title="Delete"]').click({trial: true});
+        await this.page.locator('[aria-label="键入资源组名称:"]').fill(name);
+        await this.page.locator('.fxs-button[title="删除"]').click({trial: true});
 
         if (screenshotPrefix) {
             // DEBUG: manually blur
-            this.page.locator('.ext-warning-text.msportalfx-text-regular').click({timeout: 1000});
+            await this.page.locator('.ext-warning-text.msportalfx-text-regular').click({timeout: 1000});
 
             await this.screenshot({
                 locator: this.page.locator('.fxs-contextpane.fxs-portal-contextpane-right'),
                 width: 780, 
                 height: 500, 
                 highlightobjects: [
-                    this.page.locator('[aria-label="Type the resource group name:"]'),
-                    this.page.locator('.fxs-button[title="Delete"]')
+                    this.page.locator('[aria-label="键入资源组名称:"]'),
+                    this.page.locator('.fxs-button[title="删除"]')
                 ], 
                 name: `${screenshotPrefix}-3`
             });    
         }
 
         // Fire and forget
-        await this.page.locator('.fxs-button[title="Delete"]').click();
+        await this.page.locator('.fxs-button[title="删除"]').click();
         await this.clearNotification();
     }
 }
