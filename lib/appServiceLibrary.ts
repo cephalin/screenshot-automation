@@ -514,7 +514,8 @@ AzurePortalPage.prototype.browseAppServiceUrl = async function (
 ): Promise<[any, any]> {
 
     await this.goToAppServicePageByMenu(MenuOptions.overview);
-    await this.page.waitForTimeout(10000);
+    // await this.page.waitForTimeout(10000);
+    await this.page.locator('.fxc-essentials-label-container:has-text("App Service Plan")').waitFor();
 
     // Remove sensitive information
     await this.page.locator('.fxc-essentials-label-container:has-text("Subscription ID") ~ .fxc-essentials-value-wrapper .fxc-essentials-value.fxs-portal-text')
